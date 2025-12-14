@@ -20,6 +20,8 @@ class MainMenu(arcade.View):
         self.camera_gui = arcade.Camera2D()
 
         self.background = arcade.load_texture(assets_dir / 'chalkboard-512-dark1.png')
+        # how to tile this idk
+        # self.background.
 
         self.static_visuals = arcade.SpriteList()
 
@@ -68,8 +70,9 @@ class MainMenu(arcade.View):
 
         @self.dbg1btn.event("on_click")
         def on_click_dbg1(event: arcade.gui.UIOnClickEvent):
+            self.camera_world.position = self.level.player.position
             print(f"WorldCam f{self.camera_world.position}")
-            self.camera_world.position -= (100, 100)
+            # self.camera_world.position -= (100, 100)
 
         # for the main menu play area, we'll take in lines of code like a shell prompt:
         self.code_input = arcade.gui.UIInputText(
@@ -114,7 +117,7 @@ class MainMenu(arcade.View):
         )
 
         # self.camera_world.projection = arcade.LBWH(
-        #     0, 0, 600, 480,
+        #     -1920, -1080, 1920, 1080,
         # )
 
         print(self.camera_world.position)
@@ -132,11 +135,11 @@ class MainMenu(arcade.View):
         raise NotImplementedError()
 
     def draw_background(self):
-        self.camera_world.use()
+        self.camera_gui.use()
         draw_target_space = arcade.LBWH(
             0,
             0,
-            1600,
+            self.boxLR.rect.width,
             900,
         )
         arcade.draw_lbwh_rectangle_outline(
@@ -145,21 +148,20 @@ class MainMenu(arcade.View):
             color=arcade.color.WHITE,
         )
 
-        # arcade.draw_texture_rect(
-        #     self.background,
-        #     arcade.LBWH(
-        #         self.camera_world.viewport.left - self._o_x,
-        #         self.camera_world.viewport.bottom - self._o_y,
-        #         1920+self._o_x,
-        #         1080+self._o_y
-        #     )
-        # )
+        arcade.draw_texture_rect(
+            self.background,
+            arcade.LBWH(
+                0,
+                0,
+                1920,
+                1080
+            )
+        )
 
     def on_draw(self):
         self.clear()
 
         # Draw background
-        self.camera_world.use()
         self.draw_background()
         # arcade.draw_texture_rect(
         #     self.background,
@@ -167,8 +169,11 @@ class MainMenu(arcade.View):
         # )
 
         # Do game world rendering first
+        self.camera_world.use()
         self.level.draw()
-        self.level.draw_hit_boxes()
+        self.level.draw_hit_boxes(
+            color=(255, 0, 255, 255),
+        )
 
         # now draw gui
         self.camera_gui.use()
