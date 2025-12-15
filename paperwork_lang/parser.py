@@ -87,6 +87,9 @@ class ToAst(Transformer):
 
 transformer = ast_utils.create_transformer(this_module, ToAst())
 
+def tree_to_ast(tree):
+    return transformer.transform(tree)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("program", type=Path)
@@ -96,6 +99,6 @@ if __name__ == '__main__':
         ptree = llang.parse(f.read())
         print(ptree.pretty())
     
-    ast = transformer.transform(ptree)
+    ast = tree_to_ast(ptree)
     for stmt in ast.lines:
         print(stmt)

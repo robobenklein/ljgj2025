@@ -2,7 +2,7 @@
 import arcade
 import lark
 from .assets import assets_dir
-from .parser import parse_text
+from .parser import parse, tree_to_ast
 
 
 class ChalkActor(arcade.Sprite):
@@ -11,16 +11,24 @@ class ChalkActor(arcade.Sprite):
     """
     def setup(self, level):
         self.level = level
+        self.ast = None
 
     def run_code_block(self, block):
+        """
+        Loads the program into the actor and executes it
+        """
         try:
-            ast = parse_text(block)
+            self.ptree = parse(block)
         except lark.exceptions.UnexpectedInput:
             # TODO somehow we gotta return feedback to the user
             print(f"bad code yo")
 
+        self.ast = tree_to_ast(self.ptree)
         print(f"running da code yo")
-        print(ast.pretty())
+        self.cur_instruction = 0
+        self.instructions = self.ast.lines
+        for i in self.instructions:
+            print(i)
 
     def perform_instruction(self, instruction):
         pass
