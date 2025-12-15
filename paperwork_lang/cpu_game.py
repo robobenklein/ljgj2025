@@ -78,6 +78,10 @@ class MainMenu(arcade.View):
         self.code_input = arcade.gui.UIInputText(
             size_hint=(1, 0.1),
         )
+        @self.code_input.event("on_change")
+        def on_code_input_change(event: arcade.gui.UIOnChangeEvent):
+            self.handle_code_input(event)
+
         # and it will control a 'player character',
         self.camera_world_space = arcade.gui.UISpace(
             size_hint=(1, 1),
@@ -135,6 +139,9 @@ class MainMenu(arcade.View):
         raise NotImplementedError()
 
     def draw_background(self):
+        """
+        TODO; this should tile the chalkboard with a random offset
+        """
         self.camera_gui.use()
         draw_target_space = arcade.LBWH(
             0,
@@ -178,3 +185,14 @@ class MainMenu(arcade.View):
         # now draw gui
         self.camera_gui.use()
         self.manager.draw()
+
+    def handle_code_input(self, event: arcade.gui.UIOnChangeEvent):
+        print(f"text input change: {event}")
+        if '\n' in event.new_value:
+            # TODO better "execute command" detection
+            self.code_input.text = event.old_value
+        else:
+            # nothing to execute here
+            return
+        
+        self.level.player.run_code_block(event.old_value)

@@ -4,29 +4,35 @@
 %import common.NEWLINE
 %import common.WS_INLINE
 _LINE_END: WS_INLINE? NEWLINE
-_WS: WS
+_WS: WS_INLINE
 
 _seperated{x, sep}: x (sep x)*  // Define a sequence of 'x sep x sep x ...'
 
-start: _seperated{line, _LINE_END}
+start: code_block
 
-line: (instruction | label | comment | _WS |)
+code_block: _seperated{line, _LINE_END}
 
-label: /#[\w]+/
+?line: _instruction | label | comment | _WS
+
+label: "#" label_name
+label_name: /[\w]+/
 comment: /# [^\n]*/
 
-instruction: "NOOP"i -> instr_noop
+_instruction: ins_move | ins_take | ins_drop
+
 // the actor moves to a specific location of a type
-    | "MOVE"i _WS LOCATION_DESTINATION _WS location_identifier -> instr_move
+ins_move: "MOVE"i _WS location_type _WS location_identifier
+
 // the actor takes something from where they are:
 // could be anything, or could be specific
-    | "TAKE"i (_WS parcel_type (_WS parcel_identifier)?)? -> instr_take
-// the actor puts down a moveable in their posession
-    | "DROP"i (_WS parcel_type (_WS parcel_identifier)?)? -> instr_drop
+ins_take: "TAKE"i (_WS parcel_type (_WS parcel_identifier)?)?
 
-LOCATION_DESTINATION: "desk"i | "floor"i
+// the actor puts down a moveable in their posession
+ins_drop: "DROP"i (_WS parcel_type (_WS parcel_identifier)?)?
+
+location_type: /desk|floor/i
 location_identifier: /[A-Za-z]+/i
-parcel_type: "any"i | "doc"i | "box"i
+parcel_type: /any|doc|box/i
 parcel_identifier: INT
 
 %ignore WS_INLINE

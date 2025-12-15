@@ -3,6 +3,7 @@ import arcade
 
 from ..assets import assets_dir, levels_dir
 from ..actor import ChalkActor, Desk
+from ..level import ChalkLevel
 
 class PlayerActor(ChalkActor):
     def __init__(self):
@@ -12,23 +13,16 @@ class PlayerActor(ChalkActor):
             scale=1/4,
         )
 
-class MenuLevel(arcade.Scene):
-    @classmethod
-    def factory(cls):
-        layer_options = {}
-        tile_map = arcade.load_tilemap(
-            levels_dir / 'menu1.json',
-            layer_options=layer_options,
-            use_spatial_hash=True,
-            hit_box_algorithm=arcade.hitbox.SimpleHitBoxAlgorithm(),
-        )
-        new = cls.from_tilemap(
-            tile_map,
-        )
-        new.tile_map = tile_map
-        return new
+class MenuLevel(ChalkLevel):
+    """
+    The menu level is a special case where the player can issue commands directly to the Actor in real time to move around.
+
+    I don't think any other level is going to do something like this.
+    """
+    level_filename = 'menu1.json'
 
     def setup(self):
+        super().setup()
         self.player = PlayerActor()
 
         self.add_sprite(
@@ -37,16 +31,4 @@ class MenuLevel(arcade.Scene):
         )
 
         self.player.position = (100, 100)
-
-        self.desks = arcade.SpriteList()
-        for desk_tobj in self.tile_map.object_lists['desks']:
-            print(f"load desk {desk_tobj}")
-            desk = Desk()
-            self.desks.append(desk)
-            desk.setup(desk_tobj)
-
-        self.add_sprite_list(
-            "Desks",
-            sprite_list=self.desks,
-            use_spatial_hash=True,
-        )
+        self.player.setup(self)

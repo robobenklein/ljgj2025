@@ -1,12 +1,28 @@
 
 import arcade
+import lark
 from .assets import assets_dir
+from .parser import parse_text
+
 
 class ChalkActor(arcade.Sprite):
-    def setup(self):
-        pass
+    """
+    An actor can execute instructions and interact with other objects or actors in the level.
+    """
+    def setup(self, level):
+        self.level = level
 
-    def instruction(self, instruction):
+    def run_code_block(self, block):
+        try:
+            ast = parse_text(block)
+        except lark.exceptions.UnexpectedInput:
+            # TODO somehow we gotta return feedback to the user
+            print(f"bad code yo")
+
+        print(f"running da code yo")
+        print(ast.pretty())
+
+    def perform_instruction(self, instruction):
         pass
 
 class Desk(arcade.Sprite):
