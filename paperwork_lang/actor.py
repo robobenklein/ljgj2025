@@ -53,3 +53,6 @@ class Desk(arcade.Sprite):
         )
         print(f"desk bounds {self.bounds}")
         self.position = self.bounds.center
+
+    def tick(self):
+        pass

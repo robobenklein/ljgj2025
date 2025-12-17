@@ -18,7 +18,7 @@ label: "#" label_name
 label_name: /[\w]+/
 comment: /# [^\n]*/
 
-_instruction: ins_move | ins_take | ins_drop
+_instruction: ins_move | ins_take | ins_drop | ins_goto
 
 // the actor moves to a specific location of a type
 ins_move: "MOVE"i _WS location_type _WS location_identifier
@@ -29,6 +29,9 @@ ins_take: "TAKE"i (_WS parcel_type (_WS parcel_identifier)?)?
 
 // the actor puts down a moveable in their posession
 ins_drop: "DROP"i (_WS parcel_type (_WS parcel_identifier)?)?
+
+// first element of control flow
+ins_goto: "GOTO"i label_name
 
 location_type: /desk|floor/i
 location_identifier: /[A-Za-z]+/i

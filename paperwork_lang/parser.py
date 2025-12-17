@@ -38,6 +38,10 @@ class Label(_Line):
     name: str
 
 @dataclass
+class InsGoto(_Instruction):
+    label_name: str
+
+@dataclass
 class CodeBlock(_Ast, ast_utils.AsList):
     lines: List[_Line]
 

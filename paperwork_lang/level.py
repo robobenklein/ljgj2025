@@ -8,7 +8,6 @@ class ChalkLevel(arcade.Scene):
     A ChalkBoard level:
     Commonalities include a set of Desks, actors, a Tiled map, etc.
     """
-
     @classmethod
     def factory(cls):
         if not hasattr(cls, 'level_filename'):
@@ -26,6 +25,10 @@ class ChalkLevel(arcade.Scene):
         new.tile_map = tile_map
         return new
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.running = False
+        self.tile_map = None
 
     def setup(self):
         self.desks = arcade.SpriteList()
@@ -45,8 +48,13 @@ class ChalkLevel(arcade.Scene):
     def execution_start(self):
         raise NotImplementedError()
 
+    def execution_tick(self):
+        if self.running:
+            self.execution_step()
+
     def execution_step(self):
-        raise NotImplementedError()
+        for desk in self.desks:
+            desk.tick()
 
     def execution_end(self):
         raise NotImplementedError()
