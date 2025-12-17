@@ -12,10 +12,12 @@ class ChalkActor(arcade.Sprite):
     def setup(self, level):
         self.level = level
         self.ast = None
+        self.cur_instruction = None
+        self.instructions = None
 
     def run_code_block(self, block):
         """
-        Loads the program into the actor and executes it
+        Loads the program into the actor and enables execution
         """
         try:
             self.ptree = parse(block)
@@ -35,7 +37,7 @@ class ChalkActor(arcade.Sprite):
         for i in self.instructions:
             print(i)
 
-    def perform_instruction(self, instruction):
+    def tick(self):
         pass
 
 class Desk(arcade.Sprite):
@@ -60,4 +62,6 @@ class Desk(arcade.Sprite):
         self.position = self.bounds.center
 
     def tick(self):
+        # TODO: what does a desk need to update each game tick?
+        # probably something related to game logic (win state checks and inbox/outboxing?)
         pass
