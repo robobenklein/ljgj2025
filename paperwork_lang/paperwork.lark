@@ -1,8 +1,10 @@
 
-%import common.WS
-%import common.INT
-%import common.NEWLINE
-%import common.WS_INLINE
+%import common (WS, INT, NEWLINE, WS_INLINE, LETTER, DIGIT)
+
+// what proper things (nouns) can be called
+// Desk NAME, floor NAME, building NAME, etc...
+// always a single word, but not using common.WORD because non-ASCII desires
+NAME: /[\w]+/
 _LINE_END: WS_INLINE? NEWLINE
 _WS: WS_INLINE
 
@@ -10,15 +12,15 @@ _seperated{x, sep}: x (sep x)*  // Define a sequence of 'x sep x sep x ...'
 
 start: code_block
 
-code_block: _seperated{line, _LINE_END}
+code_block: line*
 
-?line: _instruction | label | comment | _WS
+?line: (_instruction | label | COMMENT | _WS) _LINE_END
 
 label: "#" label_name
-label_name: /[\w]+/
-comment: /# [^\n]*/
+label_name: NAME
+COMMENT: "#" (" " /[^\n]+/?)?
 
-_instruction: ins_move | ins_take | ins_drop | ins_goto
+_instruction: ins_move | ins_take | ins_drop | ins_goto | ins_when
 
 // the actor moves to a specific location of a type
 ins_move: "MOVE"i _WS location_type _WS location_identifier
@@ -31,11 +33,41 @@ ins_take: "TAKE"i (_WS parcel_type (_WS parcel_identifier)?)?
 ins_drop: "DROP"i (_WS parcel_type (_WS parcel_identifier)?)?
 
 // first element of control flow
-ins_goto: "GOTO"i label_name
+// just moves the execution pointer to the referenced label
+// probably needs a better name compared to 'MOVE'
+ins_goto: "GOTO"i _WS label_name
 
-location_type: /desk|floor/i
-location_identifier: /[A-Za-z]+/i
-parcel_type: /any|doc|box/i
+// first conditional type statement
+// this statement is always followed by a single other statement
+// (most commonly a GOTO if we're being honest)
+ins_when: "WHEN"i _WS test_condition _LINE_END _instruction
+// a test_condition will always result in Truthy/Falsy
+// e.g. WHEN building.on_fire or
+// doc.id 24 (implied operator is "IS")
+test_condition: test_subject (_WS _test_value)?
+// NOTE that the test_subject does NOT specify a NAME:
+// this is because the subject will be implied based on the actor's state:
+// e.g. the floor they are on, or the doc they are holding
+
+location_type: /desk|floor|building|elevator|exit/i
+location_identifier: NAME
+parcel_type: /any|doc|box|cart/i
+// parcels (documents) are generally not unique or special,
+// so they are numerically identified only
+// every parcel in the level has a unique number
 parcel_identifier: INT
 
-%ignore WS_INLINE
+_any_identifier: location_identifier | parcel_identifier
+
+// TODO what else can be considered the 'subject' of a test?
+// level: where the actor currently exists
+// parcel: what the actor is holding (or top of stack)
+test_subject: (location_type | parcel_type) "." property_name
+_test_value: _any_identifier
+property_name: NAME
+
+// it could be an immediate value like a generic INT,
+// a specific name of something (like "Floor 1, Desk A")
+// or a reference to where to find such a value ("@")
+value_or_reference: ("@" reference_name) | _any_identifier
+reference_name: NAME

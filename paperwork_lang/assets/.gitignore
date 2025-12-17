@@ -42,6 +42,7 @@ pip-log.txt
 *.kra~
 *.png~
 *.kra.backup
+*-autosave.kra
 temp-*.kra
 
 # Operating System files
