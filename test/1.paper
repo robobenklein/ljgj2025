@@ -1,0 +1,20 @@
+# simple task to sort the incoming documents
+#begin
+move desk A
+take doc
+WHEN doc.destination B
+move desk B
+WHEN doc.destination C
+move desk C
+drop doc
+
+goto begin
+
+
+#level2
+move desk A
+WHEN building.on_fire
+move exit A
+WHEN doc.id 24
+WHEN building.operational
+GOTO level2
