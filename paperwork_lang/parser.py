@@ -23,6 +23,9 @@ def on_parse_error(e):
     pass
 
 def parse(text):
+    # stoopid but easier than fighting with Lark/LALR for another few hours:
+    if not text.endswith('\n'):
+        text += '\n'
     return llang.parse(
         text,
         on_error=on_parse_error,
@@ -136,3 +139,6 @@ if __name__ == '__main__':
     ast = tree_to_ast(ptree)
     for stmt in ast.lines:
         print(stmt)
+
+    assert parse("move desk a")
+    assert parse("# I am a comment!")

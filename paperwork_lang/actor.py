@@ -19,9 +19,14 @@ class ChalkActor(arcade.Sprite):
         """
         try:
             self.ptree = parse(block)
-        except lark.exceptions.UnexpectedInput:
+        except lark.exceptions.UnexpectedInput as e:
             # TODO somehow we gotta return feedback to the user
             print(f"bad code yo")
+            print(e)
+            # print stacktrace
+            import traceback
+            traceback.print_exc()
+            return
 
         self.ast = tree_to_ast(self.ptree)
         print(f"running da code yo")

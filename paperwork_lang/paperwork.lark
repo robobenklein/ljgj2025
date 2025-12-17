@@ -14,7 +14,7 @@ start: code_block
 
 code_block: line*
 
-?line: (_instruction | label | COMMENT | _WS) _LINE_END
+?line: (_instruction | label | COMMENT) _LINE_END
 
 label: "#" label_name
 label_name: NAME
