@@ -1,0 +1,67 @@
+*.py[co]
+
+__pycache__
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+
+#Translations
+*.mo
+
+#Mr Developer
+.mr.developer.cfg
+
+# PyCharm project settings
+.idea
+
+# Max OS X Desktop Services Store files
+.DS_Store
+
+.stversions
+.stignore
+
+
+# Krita temporary files (auto-saves and backups)
+*.kra~
+*.png~
+*.kra.backup
+temp-*.kra
+
+# Operating System files
+.DS_Store # macOS
+Thumbs.db # Windows
+ehthumbs.db # Windows
+*.stackdump # Windows/Linux crash dumps
+*.swp # Vim swap files
+.cache
+.project
+.settings
+
+# IDE/Editor specific files (if applicable, e.g., for plugin development)
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+venv/
+node_modules/
+dist/
+build/
+
+
