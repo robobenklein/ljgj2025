@@ -23,12 +23,19 @@ class ChalkLevel(arcade.Scene):
             tile_map,
         )
         new.tile_map = tile_map
+        new.tile_bounds = arcade.LBWH(
+            0,
+            0,
+            tile_map.width * tile_map.tile_width,
+            tile_map.height * tile_map.tile_height,
+        )
         return new
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.running = False
         self.tile_map = None
+        self.tile_bounds = None
 
     def setup(self):
         self.desks = arcade.SpriteList()
@@ -40,6 +47,8 @@ class ChalkLevel(arcade.Scene):
             self.desks.append(desk)
             desk.setup(desk_tobj)
             self.interactables[desk.name.lower()] = desk
+
+        # TODO load initial actor positions in a similar way
 
         self.add_sprite_list(
             "Desks",

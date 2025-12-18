@@ -284,23 +284,17 @@ class GameplayView(arcade.View):
         self.ticking_realtime = False
         self.ticking_start.text = "Start"
 
-        # self.play_camera.viewport = self.camera_space.rect
         self.camera_world.update_values(self.camera_world_space.rect)
-        # self.ui.camera.position = (
-        #     self.camera_space.rect.x * 2,
-        #     self.camera_space.rect.y * 2,
-        # )
+        # move the camera so we can see the whole level now:
         print(f"CWS rect {self.camera_world_space.rect}")
-        # self.camera_world.position -= (
-        #     self.camera_world_space.rect.left,
-        #     self.camera_world_space.rect.bottom,
-        # )
-
-        # self.camera_world.projection = arcade.LBWH(
-        #     -1920, -1080, 1920, 1080,
-        # )
-
-        print(self.camera_world.position)
+        # find the center of the level and move the camera there first:
+        self.camera_world.position = self.level.tile_bounds.center
+        print(f"Camera moved to gamespace {self.camera_world.position}")
+        # figure out camera zoom so that we fit the level in viewport:
+        self.camera_world.zoom = min(
+            self.camera_world_space.rect.width / self.level.tile_bounds.width,
+            self.camera_world_space.rect.height / self.level.tile_bounds.height,
+        )
 
         print(f"World camera viewport: {self.camera_world.viewport}")
         print(f"World camera position: {self.camera_world.position}")
