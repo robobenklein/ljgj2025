@@ -81,8 +81,8 @@ class ChalkActor(arcade.Sprite):
         ];
 
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
-        # TODO: This assumes Desk right now, add handling for the other destinations
-        match moveToObj.access_side:
+        if moveToObj.__class__ == Desk:
+            match moveToObj.access_side:
                 case "top":
                     endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
                 case "bottom":
@@ -94,6 +94,10 @@ class ChalkActor(arcade.Sprite):
 
         # TODO: Pathfind instead of teleportation
         self.position = endPoint
+        
+        # TODO: Move this to the Drop Instruction
+        if moveToObj.__class__ == Desk and hasattr(moveToObj, "interact"):
+            moveToObj.interact()
 
         # if we have reached the destination of the move command:
         # step the instruction pointer forward

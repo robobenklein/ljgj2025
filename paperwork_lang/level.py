@@ -36,11 +36,14 @@ class ChalkLevel(arcade.Scene):
         self.running = False
         self.tile_map = None
         self.tile_bounds = None
+        self.actors = []
 
-    def setup(self):
-        self.actors = arcade.SpriteList()
+    # Load any extra data that should persist untill the level is destroyed
+    def setup(self, owner):
         self.desks = arcade.SpriteList()
+        self.actors = arcade.SpriteList()
         self.interactables = {}
+        self.owner = owner;
 
         for desk_tobj in self.tile_map.object_lists['desks']:
             print(f"load desk {desk_tobj}")
@@ -66,6 +69,15 @@ class ChalkLevel(arcade.Scene):
             sprite_list=self.actors,
             use_spatial_hash=False, # actors are expected to move a lot
         )
+
+    # Load any non-persistant data that we don't need to keep around when unloaded
+    # Will reset any existing data is called again
+    def load(self):
+        pass
+
+    # Unload anything we don't need to keep
+    def unload(self):
+        pass
 
     def execution_start(self):
         self.running = True

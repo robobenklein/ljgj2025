@@ -8,6 +8,7 @@ from .assets import assets_dir, starter_code
 from .levels.mainmenu import MenuLevel
 from .levels.level1 import Level1
 
+from .statestack import StateStack
 
 class GameplayView(arcade.View):
     def __init__(self):
@@ -64,10 +65,10 @@ class GameplayView(arcade.View):
         self.boxLR.add(self.playBox)
 
         self.dbg1btn = arcade.gui.UIFlatButton(
-            text="Debug 1",
+            text="Snap->Player",
         )
         self.dbg2btn = arcade.gui.UIFlatButton(
-            text="Debug 2",
+            text="Level 1",
         )
         self.menuBox.add(self.dbg1btn)
         self.menuBox.add(self.dbg2btn)
@@ -103,13 +104,20 @@ class GameplayView(arcade.View):
 
         @self.dbg1btn.event("on_click")
         def on_click_dbg1(event: arcade.gui.UIOnClickEvent):
-            self.camera_world.position = self.level.player.position
+            if self.camera_world.position != self.level.player.position:
+                self.camera_world.position = self.level.player.position
+            else:
+                self.camera_world.position = self.level.tile_bounds.center
+
             print(f"WorldCam f{self.camera_world.position}")
             # self.camera_world.position -= (100, 100)
 
         @self.dbg2btn.event("on_click")
         def on_click_dbg2(event: arcade.gui.UIOnClickEvent):
-            self.active_level_class = Level1
+            if self.level.__class__ != Level1:
+                self.add_level(Level1)
+            else:
+                self.remove_current_level()
 
         # for the main menu play area, we'll take in lines of code like a shell prompt:
         self.code_input = arcade.gui.UIInputText(
@@ -148,6 +156,11 @@ class GameplayView(arcade.View):
             anchor_y="center_y",
             child=self.boxLR
         )
+        
+        # Make the menu level that will always persist
+        self.level = MenuLevel.factory()
+        self.level.setup(self)
+        self.level_stack = StateStack(self.level)
 
     def on_show_view(self):
         arcade.set_background_color(arcade.color.BLACK)
@@ -282,10 +295,8 @@ class GameplayView(arcade.View):
     def reset_level(self):
         self._o_x, self._o_y = random.randrange(0, 512), random.randrange(0, 512)
 
-        # TODO make a new instance of the currently selected level,
-        # not just the main menu level
-        self.level = self.active_level_class.factory()
-        self.level.setup()
+        # Reload any non-persistant data
+        self.level.load()
 
         self.ticking_realtime = False
         self.ticking_start.text = "Start"
@@ -304,3 +315,16 @@ class GameplayView(arcade.View):
 
         print(f"World camera viewport: {self.camera_world.viewport}")
         print(f"World camera position: {self.camera_world.position}")
+
+        print(self.camera_world.point_in_view(self.level.player.position))
+
+    def add_level(self, level):
+        self.level = level.factory()
+        self.level.setup(self)
+        self.level_stack.push_state(self.level)
+        
+    def remove_current_level(self):
+        self.level.execution_end()
+        self.level.running = False
+        self.level = self.level_stack.pop_state()
+        self.reset_level()

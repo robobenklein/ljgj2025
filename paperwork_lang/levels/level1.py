@@ -19,7 +19,7 @@ class Level1(ChalkLevel):
     """
     level_filename = 'level1.json'
 
-    def setup(self):
-        super().setup()
+    def setup(self, owner):
+        super().setup(owner)
 
         # level 1 init logic

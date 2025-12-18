@@ -145,7 +145,7 @@
         {
          "columns":8,
          "firstgid":1,
-         "image":"..\/..\/..\/assets\/chalk-tileset1.png",
+         "image":"..\/assets\/chalk-tileset1.png",
          "imageheight":512,
          "imagewidth":512,
          "margin":0,

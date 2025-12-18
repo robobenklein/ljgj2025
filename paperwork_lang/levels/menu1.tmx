@@ -3,7 +3,7 @@
  <editorsettings>
   <export target="menu1.json" format="json"/>
  </editorsettings>
- <tileset firstgid="1" source="../../../tiles/chalk-brick1-64.tsx"/>
+ <tileset firstgid="1" source="../tiles/chalk-brick1-64.tsx"/>
  <layer id="1" name="building" width="30" height="20">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
