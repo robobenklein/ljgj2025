@@ -48,7 +48,8 @@ class ChalkLevel(arcade.Scene):
         )
 
     def execution_start(self):
-        raise NotImplementedError()
+        self.running = True
+        # TODO load code into actors
 
     def execution_tick(self):
         if self.running:
@@ -59,4 +60,4 @@ class ChalkLevel(arcade.Scene):
             desk.tick()
 
     def execution_end(self):
-        raise NotImplementedError()
+        self.running = False

@@ -2,7 +2,7 @@
 
 import arcade
 import random
-from .cpu_game import MainMenu
+from .cpu_game import GameplayView
 
 
 WINDOW_TITLE = "Central Paperwork Unit"
@@ -18,7 +18,7 @@ def main():
         vsync=True
     )
 
-    game = MainMenu()
+    game = GameplayView()
     # game.setup()
     window.show_view(game)
     arcade.run()

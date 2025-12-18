@@ -4,17 +4,19 @@ import random
 import arcade
 import arcade.gui
 
-from .assets import assets_dir
+from .assets import assets_dir, starter_code
 from .levels.mainmenu import MenuLevel
 
 
-class MainMenu(arcade.View):
+class GameplayView(arcade.View):
     def __init__(self):
         super().__init__()
 
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
         self.physics_engine = None
+        # whether the render update loop will call game ticking or not:
+        self.ticking_realtime = False
 
         self.camera_world = arcade.Camera2D()
         self.camera_gui = arcade.Camera2D()
@@ -68,6 +70,35 @@ class MainMenu(arcade.View):
         self.menuBox.add(self.dbg1btn)
         self.menuBox.add(self.dbg2btn)
 
+        ### TICKING controls section
+        self.tickControls = arcade.gui.UIBoxLayout(
+            vertical=False,
+            # take whole horizontal space
+            size_hint=(1, 0),
+        )
+        self.ticking_start = arcade.gui.UIFlatButton(
+            text="Start",
+        )
+        @self.ticking_start.event("on_click")
+        def on_click_start(event: arcade.gui.UIOnClickEvent):
+            self.start_realtime_ticking()
+        self.ticking_once = arcade.gui.UIFlatButton(
+            text="Step",
+        )
+        @self.ticking_once.event("on_click")
+        def on_click_once(event: arcade.gui.UIOnClickEvent):
+            self.do_single_tick()
+        self.ticking_stop = arcade.gui.UIFlatButton(
+            text="Reset",
+        )
+        @self.ticking_stop.event("on_click")
+        def on_click_stop(event: arcade.gui.UIOnClickEvent):
+            self.on_reset(event)
+        for btn in (self.ticking_start, self.ticking_once, self.ticking_stop):
+            self.tickControls.add(btn)
+        self.menuBox.add(self.tickControls)
+        ### END TICKING controls section
+
         @self.dbg1btn.event("on_click")
         def on_click_dbg1(event: arcade.gui.UIOnClickEvent):
             self.camera_world.position = self.level.player.position
@@ -77,16 +108,30 @@ class MainMenu(arcade.View):
         # for the main menu play area, we'll take in lines of code like a shell prompt:
         self.code_input = arcade.gui.UIInputText(
             size_hint=(1, 0.1),
+            caret_color=arcade.color.WHITE,
+            text="# This is your character's control input box, press enter to execute a command"
         )
         @self.code_input.event("on_change")
         def on_code_input_change(event: arcade.gui.UIOnChangeEvent):
             self.handle_code_input(event)
 
+        # to program the actors, the editor goes in the left column
+        # in the future you might open one on the right too?
+        # (to edit multiple actors' code)
+        self.code_editor_actor = arcade.gui.UIInputText(
+            # takes all the remaining space:
+            size_hint=(1, 1),
+            multiline=True,
+            text=starter_code["mainmenu"],
+            caret_color=arcade.color.WHITE,
+        )
+        self.menuBox.add(self.code_editor_actor)
+
         # and it will control a 'player character',
         self.camera_world_space = arcade.gui.UISpace(
             size_hint=(1, 1),
         )
-        
+
         self.playBox.add(self.camera_world_space)
         self.playBox.add(self.code_input)
 
@@ -98,38 +143,16 @@ class MainMenu(arcade.View):
             child=self.boxLR
         )
 
-        self.level = MenuLevel.factory()
-
     def on_show_view(self):
         arcade.set_background_color(arcade.color.BLACK)
-        self._o_x, self._o_y = random.randrange(0, 512), random.randrange(0, 512)
-        
+
         self.manager.execute_layout()
         self.manager.debug()
-        self.level.setup()
 
-        # self.play_camera.viewport = self.camera_space.rect
-        self.camera_world.update_values(self.camera_world_space.rect)
-        # self.ui.camera.position = (
-        #     self.camera_space.rect.x * 2,
-        #     self.camera_space.rect.y * 2,
-        # )
-        print(f"CWS rect {self.camera_world_space.rect}")
-        self.camera_world.position -= (
-            self.camera_world_space.rect.left,
-            self.camera_world_space.rect.bottom,
-        )
+        self.reset_level()
 
-        # self.camera_world.projection = arcade.LBWH(
-        #     -1920, -1080, 1920, 1080,
-        # )
-
-        print(self.camera_world.position)
-
-        print(f"World camera viewport: {self.camera_world.viewport}")
-        print(f"World camera position: {self.camera_world.position}")
-
-        print(self.camera_world.point_in_view(self.level.player.position))
+    def center_camera_to_level(self):
+        pass # TODO
 
     def on_hide_view(self):
         self.manager.disable()
@@ -187,6 +210,9 @@ class MainMenu(arcade.View):
         self.manager.draw()
 
     def handle_code_input(self, event: arcade.gui.UIOnChangeEvent):
+        """
+        Runs a single command entered in the player's control box
+        """
         print(f"text input change: {event}")
         if '\n' in event.new_value:
             # TODO better "execute command" detection
@@ -194,5 +220,67 @@ class MainMenu(arcade.View):
         else:
             # nothing to execute here
             return
-        
-        self.level.player.run_code_block(event.old_value)
+
+        try:
+            self.level.player.load_code_block(event.old_value)
+            self.level.player.tick()
+            # if successful, consume the command
+            self.code_input.text = ""
+        except Exception as e:
+            # TODO handle bad code
+            raise e
+
+    def start_realtime_ticking(self):
+        self.ticking_realtime = not self.ticking_realtime
+        self.ticking_start.text = "Pause" if self.ticking_realtime else "Start"
+        if self.ticking_realtime and not self.level.running:
+            self.level.execution_start()
+            self.level.running = self.ticking_realtime
+
+    def do_single_tick(self):
+        if self.ticking_realtime:
+            # pause execution
+            # HACK to just pretend the button was pressed lol
+            self.on_start_ticking()
+        if not self.level.running:
+            self.level.execution_start()
+        self.level.execution_tick()
+
+    def on_reset(self, event: arcade.gui.UIOnClickEvent):
+        self.level.execution_end()
+        self.level.running = False
+        self.reset_level()
+
+    def reset_level(self):
+        self._o_x, self._o_y = random.randrange(0, 512), random.randrange(0, 512)
+
+        # TODO make a new instance of the currently selected level,
+        # not just the main menu level
+        self.level = MenuLevel.factory()
+        self.level.setup()
+
+        self.ticking_realtime = False
+        self.ticking_start.text = "Start"
+
+        # self.play_camera.viewport = self.camera_space.rect
+        self.camera_world.update_values(self.camera_world_space.rect)
+        # self.ui.camera.position = (
+        #     self.camera_space.rect.x * 2,
+        #     self.camera_space.rect.y * 2,
+        # )
+        print(f"CWS rect {self.camera_world_space.rect}")
+        # self.camera_world.position -= (
+        #     self.camera_world_space.rect.left,
+        #     self.camera_world_space.rect.bottom,
+        # )
+
+        # self.camera_world.projection = arcade.LBWH(
+        #     -1920, -1080, 1920, 1080,
+        # )
+
+        print(self.camera_world.position)
+
+        print(f"World camera viewport: {self.camera_world.viewport}")
+        print(f"World camera position: {self.camera_world.position}")
+
+        print(self.camera_world.point_in_view(self.level.player.position))

@@ -2,7 +2,9 @@
 import arcade
 import lark
 from .assets import assets_dir
-from .parser import parse, tree_to_ast
+from .parser import (
+    parse, tree_to_ast, _Instruction,
+)
 
 
 class ChalkActor(arcade.Sprite):
@@ -14,10 +16,10 @@ class ChalkActor(arcade.Sprite):
         self.ast = None
         self.cur_instruction = None
         self.instructions = None
-        
+
         self.ins_to_func = {"InsMove" : self.InsMove}
 
-    def run_code_block(self, block):
+    def load_code_block(self, block):
         """
         Loads the program into the actor and enables execution
         """
@@ -36,18 +38,27 @@ class ChalkActor(arcade.Sprite):
         print(f"running da code yo")
         self.cur_instruction = 0
         self.instructions = self.ast.lines
-        
+
         for i in self.instructions:
             print(i)
-            self.ins_to_func[i.__class__.__name__](i)
 
     def tick(self):
-        pass
-        
+        # runs the current instruction
+        if self.cur_instruction >= len(self.instructions):
+            print("reached end of actor instructions!")
+            self.cur_instruction = 0
+            return
+        i = self.instructions[self.cur_instruction]
+        if not isinstance(i, _Instruction):
+            print(f"Can't execute this: {i}")
+            self.cur_instruction += 1
+            return
+        self.ins_to_func[i.__class__.__name__](i)
+
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
         moveToObj = self.level.interactables[params.location_type+' '+params.location_identifier];
-        
+
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
         # TODO: This assumes Desk right now, add handling for the other destinations
         match moveToObj.access_side:
@@ -59,9 +70,13 @@ class ChalkActor(arcade.Sprite):
                     endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
                 case "right":
                     endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
-                    
+
         # TODO: Pathfind instead of teleportation
         self.position = endPoint
+
+        # if we have reached the destination of the move command:
+        # step the instruction pointer forward
+        self.cur_instruction += 1
 
 class Desk(arcade.Sprite):
     def __init__(self):
@@ -86,10 +101,10 @@ class Desk(arcade.Sprite):
         )
         print(f"desk bounds {self.bounds}")
         self.position = self.bounds.center
-        
+
         self.access_side = tobj.properties["access_side"];
         print(f"desk access-side {self.access_side}")
-        
+
 
     def tick(self):
         # TODO: what does a desk need to update each game tick?
