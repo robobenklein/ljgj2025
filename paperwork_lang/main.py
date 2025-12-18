@@ -15,7 +15,8 @@ def main():
         title=WINDOW_TITLE,
         fullscreen=False,
         resizable=False,
-        vsync=True
+        vsync=True,
+        fixed_rate=1/60,
     )
 
     game = GameplayView()

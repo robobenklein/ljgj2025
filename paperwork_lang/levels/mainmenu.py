@@ -32,3 +32,7 @@ class MenuLevel(ChalkLevel):
 
         self.player.position = (100, 100)
         self.player.setup(self)
+
+    def execution_step(self):
+        self.player.tick()
+        super().execution_step()

@@ -189,6 +189,12 @@ class GameplayView(arcade.View):
         )
 
     def on_draw(self):
+        """
+        keep this function minimal
+        it runs on every *frame*, not just game ticks
+        for game logic it's in on_update()
+        if this were a fully released game, some interpolation of movement might happen here too
+        """
         self.clear()
 
         # Draw background
@@ -209,6 +215,10 @@ class GameplayView(arcade.View):
         self.camera_gui.use()
         self.manager.draw()
 
+    def on_update(self, delta_time: float):
+        if self.ticking_realtime:
+            self.level.execution_tick()
+
     def handle_code_input(self, event: arcade.gui.UIOnChangeEvent):
         """
         Runs a single command entered in the player's control box
@@ -223,25 +233,37 @@ class GameplayView(arcade.View):
 
         try:
             self.level.player.load_code_block(event.old_value)
-            self.level.player.tick()
+            # TODO some commands might take multiple ticks,
+            # should keep ticking until instruction pointer advances or loops back
+            self.level.execution_step()
             # if successful, consume the command
             self.code_input.text = ""
         except Exception as e:
             # TODO handle bad code
             raise e
 
-    def start_realtime_ticking(self):
-        self.ticking_realtime = not self.ticking_realtime
+    def start_level_execution(self):
+        # load actor code into actors...
+        self.level.execution_start()
+        self.level.running = self.ticking_realtime
+
+    def start_realtime_ticking(self, realtime=None):
+        """
+        Called as Start/Pause button action
+        """
+        if realtime == None:
+            self.ticking_realtime = not self.ticking_realtime
+        else:
+            self.ticking_realtime = realtime
         self.ticking_start.text = "Pause" if self.ticking_realtime else "Start"
         if self.ticking_realtime and not self.level.running:
-            self.level.execution_start()
-            self.level.running = self.ticking_realtime
+            self.start_level_execution()
 
     def do_single_tick(self):
         if self.ticking_realtime:
             # pause execution
             # HACK to just pretend the button was pressed lol
-            self.on_start_ticking()
+            self.start_realtime_ticking(False)
         if not self.level.running:
             self.level.execution_start()
         self.level.execution_tick()

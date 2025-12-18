@@ -43,6 +43,12 @@ class ChalkActor(arcade.Sprite):
             print(i)
 
     def tick(self):
+        if not self.instructions:
+            # actor has nothing to do!
+            # needs some better indicator of "Idleness"
+            # for now let's just spin lol
+            self.turn_right(10)
+            return
         # runs the current instruction
         if self.cur_instruction >= len(self.instructions):
             print("reached end of actor instructions!")
