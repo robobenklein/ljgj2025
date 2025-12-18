@@ -23,16 +23,7 @@ class MenuLevel(ChalkLevel):
 
     def setup(self):
         super().setup()
-        self.player = PlayerActor()
-
-        self.add_sprite(
-            "Player",
-            self.player
-        )
-
-        self.player.position = (100, 100)
-        self.player.setup(self)
+        self.player = self.actors[0]
 
     def execution_step(self):
-        self.player.tick()
         super().execution_step()

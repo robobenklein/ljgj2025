@@ -6,6 +6,7 @@ import arcade.gui
 
 from .assets import assets_dir, starter_code
 from .levels.mainmenu import MenuLevel
+from .levels.level1 import Level1
 
 
 class GameplayView(arcade.View):
@@ -17,6 +18,7 @@ class GameplayView(arcade.View):
         self.physics_engine = None
         # whether the render update loop will call game ticking or not:
         self.ticking_realtime = False
+        self.active_level_class = MenuLevel
 
         self.camera_world = arcade.Camera2D()
         self.camera_gui = arcade.Camera2D()
@@ -104,6 +106,10 @@ class GameplayView(arcade.View):
             self.camera_world.position = self.level.player.position
             print(f"WorldCam f{self.camera_world.position}")
             # self.camera_world.position -= (100, 100)
+
+        @self.dbg2btn.event("on_click")
+        def on_click_dbg2(event: arcade.gui.UIOnClickEvent):
+            self.active_level_class = Level1
 
         # for the main menu play area, we'll take in lines of code like a shell prompt:
         self.code_input = arcade.gui.UIInputText(
@@ -278,7 +284,7 @@ class GameplayView(arcade.View):
 
         # TODO make a new instance of the currently selected level,
         # not just the main menu level
-        self.level = MenuLevel.factory()
+        self.level = self.active_level_class.factory()
         self.level.setup()
 
         self.ticking_realtime = False
@@ -298,5 +304,3 @@ class GameplayView(arcade.View):
 
         print(f"World camera viewport: {self.camera_world.viewport}")
         print(f"World camera position: {self.camera_world.position}")
-
-        print(self.camera_world.point_in_view(self.level.player.position))

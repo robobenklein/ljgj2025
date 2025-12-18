@@ -11,13 +11,24 @@ class ChalkActor(arcade.Sprite):
     """
     An actor can execute instructions and interact with other objects or actors in the level.
     """
-    def setup(self, level):
+    def __init__(self):
+        super().__init__(
+            assets_dir / "char1.png",
+            scale=1/4,
+        )
+
+    def setup(self, tobj, level):
         self.level = level
         self.ast = None
         self.cur_instruction = None
         self.instructions = None
 
-        self.ins_to_func = {"InsMove" : self.InsMove}
+        self.name = tobj.name
+
+        # determine position based on the object bounds:
+        assert len(tobj.shape) == 2, f"actor map object shape should be 2D spawn point"
+        print(f"actor {self.name} at {tobj.shape}")
+        self.position = tobj.shape
 
     def load_code_block(self, block):
         """
@@ -59,11 +70,15 @@ class ChalkActor(arcade.Sprite):
             print(f"Can't execute this: {i}")
             self.cur_instruction += 1
             return
-        self.ins_to_func[i.__class__.__name__](i)
+
+        # make functions in this class the same as the intruction class name
+        getattr(self, i.__class__.__name__)(i)
 
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
-        moveToObj = self.level.interactables[params.location_type+' '+params.location_identifier];
+        moveToObj = self.level.interactables[
+            f"{params.location_type} {params.location_identifier}"
+        ];
 
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
         # TODO: This assumes Desk right now, add handling for the other destinations

@@ -1,6 +1,6 @@
 import arcade
 from .assets import levels_dir
-from .actor import Desk
+from .actor import Desk, ChalkActor
 
 
 class ChalkLevel(arcade.Scene):
@@ -38,6 +38,7 @@ class ChalkLevel(arcade.Scene):
         self.tile_bounds = None
 
     def setup(self):
+        self.actors = arcade.SpriteList()
         self.desks = arcade.SpriteList()
         self.interactables = {}
 
@@ -48,12 +49,22 @@ class ChalkLevel(arcade.Scene):
             desk.setup(desk_tobj)
             self.interactables[desk.name.lower()] = desk
 
-        # TODO load initial actor positions in a similar way
-
         self.add_sprite_list(
             "Desks",
             sprite_list=self.desks,
             use_spatial_hash=True,
+        )
+
+        for actor_tobj in self.tile_map.object_lists['actors']:
+            print(f"load actor {actor_tobj}")
+            actor = ChalkActor()
+            self.actors.append(actor)
+            actor.setup(actor_tobj, self)
+
+        self.add_sprite_list(
+            "Actors",
+            sprite_list=self.actors,
+            use_spatial_hash=False, # actors are expected to move a lot
         )
 
     def execution_start(self):
@@ -67,6 +78,9 @@ class ChalkLevel(arcade.Scene):
     def execution_step(self):
         for desk in self.desks:
             desk.tick()
+
+        for actor in self.actors:
+            actor.tick()
 
     def execution_end(self):
         self.running = False
