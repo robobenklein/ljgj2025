@@ -14,6 +14,8 @@ class ChalkActor(arcade.Sprite):
         self.ast = None
         self.cur_instruction = None
         self.instructions = None
+        
+        self.ins_to_func = {"InsMove" : self.InsMove}
 
     def run_code_block(self, block):
         """
@@ -34,11 +36,32 @@ class ChalkActor(arcade.Sprite):
         print(f"running da code yo")
         self.cur_instruction = 0
         self.instructions = self.ast.lines
+        
         for i in self.instructions:
             print(i)
+            self.ins_to_func[i.__class__.__name__](i)
 
     def tick(self):
         pass
+        
+    def InsMove(self, params):
+        # TODO: Error handling if the id does not exist
+        moveToObj = self.level.interactables[params.location_type+' '+params.location_identifier];
+        
+        # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
+        # TODO: This assumes Desk right now, add handling for the other destinations
+        match moveToObj.access_side:
+                case "top":
+                    endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
+                case "bottom":
+                    endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - self.height / 2)
+                case "left":
+                    endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
+                case "right":
+                    endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
+                    
+        # TODO: Pathfind instead of teleportation
+        self.position = endPoint
 
 class Desk(arcade.Sprite):
     def __init__(self):
@@ -51,6 +74,9 @@ class Desk(arcade.Sprite):
         # original data from loading the Tiled object
         self._tobj = tobj
 
+        self.name = tobj.name.lower()
+        print(f"desk name {self.name}")
+
         # determine position based on the object bounds:
         self.bounds = arcade.LRBT(
             min(x[0] for x in tobj.shape),
@@ -60,6 +86,10 @@ class Desk(arcade.Sprite):
         )
         print(f"desk bounds {self.bounds}")
         self.position = self.bounds.center
+        
+        self.access_side = tobj.properties["access_side"];
+        print(f"desk access-side {self.access_side}")
+        
 
     def tick(self):
         # TODO: what does a desk need to update each game tick?

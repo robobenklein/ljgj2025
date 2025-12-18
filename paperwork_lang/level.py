@@ -32,12 +32,14 @@ class ChalkLevel(arcade.Scene):
 
     def setup(self):
         self.desks = arcade.SpriteList()
+        self.interactables = {}
 
         for desk_tobj in self.tile_map.object_lists['desks']:
             print(f"load desk {desk_tobj}")
             desk = Desk()
             self.desks.append(desk)
             desk.setup(desk_tobj)
+            self.interactables[desk.name.lower()] = desk
 
         self.add_sprite_list(
             "Desks",
