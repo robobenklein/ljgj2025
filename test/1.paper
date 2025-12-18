@@ -1,20 +1,21 @@
+# intended solution for level 1
 # simple task to sort the incoming documents
-#begin
-move desk A
+
+#level1
+move desk inbox
 take doc
+WHEN doc.spam
+goto spam
+WHEN doc.destination A
+move desk A
 WHEN doc.destination B
 move desk B
 WHEN doc.destination C
 move desk C
 drop doc
+goto level1
 
-goto begin
-
-
-#level2
-move desk A
-WHEN building.on_fire
-move exit A
-WHEN doc.id 24
-WHEN building.operational
-GOTO level2
+#spam
+move desk spambox
+drop doc
+goto level1
