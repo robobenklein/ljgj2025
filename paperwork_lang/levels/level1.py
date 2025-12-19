@@ -12,6 +12,8 @@ class Level1(ChalkLevel):
 
     Get rid of any spam,
 
+    TAKE desk inbox
+
     WHEN doc.spam
     MOVE desk spambox
 

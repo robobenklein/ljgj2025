@@ -96,6 +96,10 @@ class GameplayView(arcade.View):
         )
         @self.ticking_once.event("on_click")
         def on_click_once(event: arcade.gui.UIOnClickEvent):
+            if self.current_input_actor_name in self.level.actor_lookup:
+                    # Save the block so it can be loaded on execution 
+                    self.level.actor_lookup[self.current_input_actor_name].saved_code_block = self.code_editor_actor.text
+
             self.do_single_tick()
             
         self.ticking_stop = arcade.gui.UIFlatButton(
@@ -271,8 +275,6 @@ class GameplayView(arcade.View):
             # TODO some commands might take multiple ticks,
             # should keep ticking until instruction pointer advances or loops back
             self.level.execution_step()
-            # if successful, consume the command
-            self.code_input.text = ""
         except Exception as e:
             # TODO handle bad code
             raise e
@@ -315,7 +317,7 @@ class GameplayView(arcade.View):
             self.start_realtime_ticking(False)
         if not self.level.running:
             self.level.execution_start()
-        self.level.execution_tick()
+        self.level.execution_tick(1) # Assuming perfect 60 fps since we are stepping
 
     def start_level_execution(self):
         # load actor code into actors...

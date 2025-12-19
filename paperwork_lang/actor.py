@@ -45,7 +45,7 @@ class ChalkActor(arcade.Sprite):
             self.ptree = parse(block)
         except lark.exceptions.UnexpectedInput as e:
             # TODO somehow we gotta return feedback to the user
-            print(f"bad code yo")
+            print(f"bad code yo: {block}")
             print(e)
             # print stacktrace
             import traceback
@@ -56,6 +56,7 @@ class ChalkActor(arcade.Sprite):
         print(f"running da code yo")
         self.cur_instruction = 0
         self.instructions = self.ast.lines
+        self.labels = {}
 
         for i in self.instructions:
             print(i)
@@ -71,15 +72,23 @@ class ChalkActor(arcade.Sprite):
         if self.cur_instruction >= len(self.instructions):
             self.cur_instruction = 0
             return
-        i = self.instructions[self.cur_instruction]
-        print(f"line {self.cur_instruction} code: {i}!")
-        if not isinstance(i, _Instruction):
-            print(f"{self.name} can't execute this: {i}!")
+
+        instruction = self.instructions[self.cur_instruction]
+        print(f"line {self.cur_instruction} code: {instruction}")
+        while not isinstance(instruction, _Instruction):
+            label = instruction.split('#', 1)[1].lstrip()
+            self.labels[label] = self.cur_instruction
+            
             self.cur_instruction += 1
-            return
+            if self.cur_instruction >= len(self.instructions):
+                self.cur_instruction = 0
+                return
+
+            instruction = self.instructions[self.cur_instruction]
+            print(f"line {self.cur_instruction} code: {instruction}")
 
         # make functions in this class the same as the intruction class name
-        if getattr(self, i.__class__.__name__)(i):
+        if getattr(self, instruction.__class__.__name__)(instruction):
             # if we have finished the command:
             # step the instruction pointer forward
             self.cur_instruction += 1
@@ -192,6 +201,17 @@ class ChalkActor(arcade.Sprite):
                 self.inventory.remove_item(params)
 
         # TODO: Handle other types
+
+    def InsWhen(self, params):
+        print(params)
+
+    def InsGoto(self, params):
+        if params.label_name in self.labels:
+            self.cur_instruction = self.labels[params.label_name]
+        else:
+            print(f"Unknown label: {params.label_name}")
+
+        return True
 
 class Desk(arcade.Sprite):
     def __init__(self):

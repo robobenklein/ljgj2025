@@ -8,8 +8,7 @@ assets_dir = Path(__file__).resolve().parent.joinpath('assets')
 levels_dir = Path(__file__).resolve().parent.joinpath('levels')
 
 starter_code = {
-    "mainmenu": """
-# This your code input box
+    "mainmenu": """# This your code input box
 # (Sorry it sucks so bad lol)
 # This is where you'd write instructions for your employees,
 # such as
