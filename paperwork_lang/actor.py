@@ -1,11 +1,11 @@
 
 import arcade
 import lark
+
 from .assets import assets_dir
 from .parser import (
     parse, tree_to_ast, _Instruction,
 )
-
 from .inventory import ActorInventory
 
 
@@ -18,11 +18,12 @@ class ChalkActor(arcade.Sprite):
             assets_dir / "char1.png",
             scale=1/4,
         )
+        self.saved_code_block = "" # Don't reset the user's code, so don't place in setup
 
     def setup(self, tobj, level):
         self.level = level
         self.ast = None
-        self.cur_instruction = None
+        self.cur_instruction = 0
         self.instructions = None
         self.name = tobj.name
         
@@ -34,6 +35,7 @@ class ChalkActor(arcade.Sprite):
         assert len(tobj.shape) == 2, f"actor map object shape should be 2D spawn point"
         print(f"actor {self.name} at {tobj.shape}")
         self.position = tobj.shape
+        self.angle = 0
 
     def load_code_block(self, block):
         """
@@ -67,17 +69,20 @@ class ChalkActor(arcade.Sprite):
             return
         # runs the current instruction
         if self.cur_instruction >= len(self.instructions):
-            print("reached end of actor instructions!")
             self.cur_instruction = 0
             return
         i = self.instructions[self.cur_instruction]
+        print(f"line {self.cur_instruction} code: {i}!")
         if not isinstance(i, _Instruction):
-            print(f"Can't execute this: {i}")
+            print(f"{self.name} can't execute this: {i}!")
             self.cur_instruction += 1
             return
 
         # make functions in this class the same as the intruction class name
-        getattr(self, i.__class__.__name__)(i)
+        if getattr(self, i.__class__.__name__)(i):
+            # if we have finished the command:
+            # step the instruction pointer forward
+            self.cur_instruction += 1
 
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
@@ -85,7 +90,7 @@ class ChalkActor(arcade.Sprite):
         if interactableID in self.level.interactables:
             moveToObj = self.level.interactables[interactableID]
         else:
-            return
+            return True
 
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
         if moveToObj.__class__ == Desk:
@@ -109,9 +114,7 @@ class ChalkActor(arcade.Sprite):
         self.position = endPoint
         self.angle = endDirection_degrees
 
-        # if we have reached the destination of the move command:
-        # step the instruction pointer forward
-        self.cur_instruction += 1
+        return True # Finished, if not true, then we get re-called
 
     def InsTake(self, params):
         # Find the interactable in 'front' of us, if there exists one (otherwise fail)
@@ -125,13 +128,13 @@ class ChalkActor(arcade.Sprite):
             case 270: # Facing right
                 overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
             case _: # If we are not axis aligned, then we are not at a desk
-                return
+                return True
 
         # TODO: Make the interactables also contain sprite lists to iterate through?
         overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
         if len(overlaps) == 0:
             print(f"InsDrop debug no overlaps")
-            return
+            return True
 
         # TODO: Should only be 1 overlap, but could be a bug later
         interactable = overlaps[0]
@@ -146,9 +149,9 @@ class ChalkActor(arcade.Sprite):
                     print(f"InsTake retrieved doc: {params.parcel_identifier}")
                     self.inventory.add_item(params)
                     
-                return
+                return True
             elif params.parcel_type != "any": # Can only take docs from desks
-                return
+                return True
             # Let 'any' try the other options
         
         # TODO: Handle other types
@@ -156,7 +159,7 @@ class ChalkActor(arcade.Sprite):
     def InsDrop(self, params):
         if self.inventory.contains_item(params) == False:
             print(f"InsDrop debug no item")
-            return
+            return True
 
         # TODO: Handle 'ANY' type
         # Docs must be at a desk to drop them (Don't want to scatter paapers all over the floor!)
@@ -172,12 +175,12 @@ class ChalkActor(arcade.Sprite):
                 case 270: # Facing right
                     overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
                 case _: # If we are not axis aligned, then we are not at a desk
-                    return
+                    return True
 
             overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
             if len(overlaps) == 0:
                 print(f"InsDrop debug no overlaps")
-                return
+                return True
 
             # TODO: Should only be 1 overlap, but could be a bug later
             interactable = overlaps[0]
@@ -225,7 +228,6 @@ class Desk(arcade.Sprite):
 
         stopTicking = True
         for doc in self.documents:
-            print(f"{self.name} handling doc {doc}")
             if self.doc_handling(doc) == False:
                 stopTicking = False
 

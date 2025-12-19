@@ -84,19 +84,27 @@ class GameplayView(arcade.View):
         )
         @self.ticking_start.event("on_click")
         def on_click_start(event: arcade.gui.UIOnClickEvent):
+            if self.ticking_start.text == "Start" and not self.level.running:
+                if self.current_input_actor_name in self.level.actor_lookup:
+                    # Save the block so it can be loaded on execution 
+                    self.level.actor_lookup[self.current_input_actor_name].saved_code_block = self.code_editor_actor.text
+
             self.start_realtime_ticking()
+
         self.ticking_once = arcade.gui.UIFlatButton(
             text="Step",
         )
         @self.ticking_once.event("on_click")
         def on_click_once(event: arcade.gui.UIOnClickEvent):
             self.do_single_tick()
+            
         self.ticking_stop = arcade.gui.UIFlatButton(
             text="Reset",
         )
         @self.ticking_stop.event("on_click")
         def on_click_stop(event: arcade.gui.UIOnClickEvent):
             self.on_reset(event)
+            
         for btn in (self.ticking_start, self.ticking_once, self.ticking_stop):
             self.tickControls.add(btn)
         self.menuBox.add(self.tickControls)
@@ -104,7 +112,7 @@ class GameplayView(arcade.View):
 
         @self.dbg1btn.event("on_click")
         def on_click_dbg1(event: arcade.gui.UIOnClickEvent):
-            if self.camera_world.position != self.level.player.position:
+            if hasattr(self, "player") and self.camera_world.position != self.level.player.position:
                 self.camera_world.position = self.level.player.position
             else:
                 self.camera_world.position = self.level.tile_bounds.center
@@ -128,6 +136,14 @@ class GameplayView(arcade.View):
         @self.code_input.event("on_change")
         def on_code_input_change(event: arcade.gui.UIOnChangeEvent):
             self.handle_code_input(event)
+
+        self.current_input_actor_name = ""
+        self.current_input_actor_UI = arcade.gui.UITextWidget(
+            size_hint=(1, 0.1),
+            caret_color=arcade.color.WHITE,
+            text="Currently editing actor: NONE"
+        )
+        self.menuBox.add(self.current_input_actor_UI)
 
         # to program the actors, the editor goes in the left column
         # in the future you might open one on the right too?
@@ -236,7 +252,7 @@ class GameplayView(arcade.View):
 
     def on_update(self, delta_time: float):
         if self.ticking_realtime:
-            self.level.execution_tick()
+            self.level.execution_tick(delta_time)
 
     def handle_code_input(self, event: arcade.gui.UIOnChangeEvent):
         """
@@ -261,10 +277,24 @@ class GameplayView(arcade.View):
             # TODO handle bad code
             raise e
 
-    def start_level_execution(self):
-        # load actor code into actors...
-        self.level.execution_start()
-        self.level.running = self.ticking_realtime
+    def on_mouse_press(self, x, y, button, key_modifiers):
+        """
+        Called when the user presses a mouse button.
+        """
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            worldLocation = self.camera_world.unproject((x, y))
+            if (worldLocation.x, worldLocation.y) in self.level.tile_bounds:
+                overlaps = arcade.get_sprites_in_rect(arcade.XYWH(worldLocation.x, worldLocation.y, 10, 10), self.level.actors)
+                if len(overlaps):
+                    if self.current_input_actor_name != "" and overlaps[0].name != self.current_input_actor_name:
+                        # Save the code to the actor before we change to a new one
+                        self.level.actor_lookup[self.current_input_actor_name].saved_code_block = self.code_editor_actor.text
+
+                    self.current_input_actor_name = overlaps[0].name
+                    self.current_input_actor_UI.text = f"Currently editing actor: {self.current_input_actor_name}"
+                else:
+                    self.current_input_actor_name = ""
+                    self.current_input_actor_UI.text = "Currently editing actor: NONE"
 
     def start_realtime_ticking(self, realtime=None):
         """
@@ -287,6 +317,11 @@ class GameplayView(arcade.View):
             self.level.execution_start()
         self.level.execution_tick()
 
+    def start_level_execution(self):
+        # load actor code into actors...
+        self.level.execution_start()
+        self.level.running = self.ticking_realtime
+
     def on_reset(self, event: arcade.gui.UIOnClickEvent):
         self.level.execution_end()
         self.level.running = False
@@ -300,6 +335,9 @@ class GameplayView(arcade.View):
 
         self.ticking_realtime = False
         self.ticking_start.text = "Start"
+        
+        self.current_input_actor_name = ""
+        self.current_input_actor_UI.text = "Currently editing actor: NONE"
 
         self.camera_world.update_values(self.camera_world_space.rect)
         # move the camera so we can see the whole level now:
@@ -316,12 +354,11 @@ class GameplayView(arcade.View):
         print(f"World camera viewport: {self.camera_world.viewport}")
         print(f"World camera position: {self.camera_world.position}")
 
-        print(self.camera_world.point_in_view(self.level.player.position))
-
     def add_level(self, level):
         self.level = level.factory()
         self.level.setup(self)
         self.level_stack.push_state(self.level)
+        self.reset_level()
         
     def remove_current_level(self):
         self.level.execution_end()

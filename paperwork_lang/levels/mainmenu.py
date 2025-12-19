@@ -33,7 +33,15 @@ class MenuLevel(ChalkLevel):
         
         # Tell this desk that when it recieves a document it should load level 1
         self.interactables["desk b"].doc_handling = self.load_level_1
+
+    def load(self):
+        super().load()
         
+        for desk in self.interactables.values():
+            desk.documents.clear()
+
+        self.interactables["desk a"].documents.add(1)
+
     def execution_step(self):
         super().execution_step()
 

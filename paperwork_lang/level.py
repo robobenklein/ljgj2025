@@ -1,4 +1,6 @@
 import arcade
+import math
+
 from .assets import levels_dir
 from .actor import Desk, ChalkActor
 
@@ -36,14 +38,14 @@ class ChalkLevel(arcade.Scene):
         self.running = False
         self.tile_map = None
         self.tile_bounds = None
-        self.actors = []
 
     # Load any extra data that should persist untill the level is destroyed
     def setup(self, owner):
         self.desks = arcade.SpriteList()
         self.actors = arcade.SpriteList()
         self.interactables = {}
-        self.owner = owner;
+        self.actor_lookup = {}
+        self.owner = owner
 
         for desk_tobj in self.tile_map.object_lists['desks']:
             print(f"load desk {desk_tobj}")
@@ -63,6 +65,7 @@ class ChalkLevel(arcade.Scene):
             actor = ChalkActor()
             self.actors.append(actor)
             actor.setup(actor_tobj, self)
+            self.actor_lookup[actor.name] = actor
 
         self.add_sprite_list(
             "Actors",
@@ -71,9 +74,12 @@ class ChalkLevel(arcade.Scene):
         )
 
     # Load any non-persistant data that we don't need to keep around when unloaded
-    # Will reset any existing data is called again
+    # Will reset any existing data if called again
     def load(self):
-        pass
+        self.cur_time = 0
+
+        for actor_tobj in self.tile_map.object_lists['actors']:
+            self.actor_lookup[actor_tobj.name].setup(actor_tobj, self)
 
     # Unload anything we don't need to keep
     def unload(self):
@@ -81,11 +87,17 @@ class ChalkLevel(arcade.Scene):
 
     def execution_start(self):
         self.running = True
-        # TODO load code into actors
+        for actor in self.actors:
+            actor.load_code_block(actor.saved_code_block)
 
-    def execution_tick(self):
+    def execution_tick(self, delta_time):
         if self.running:
-            self.execution_step()
+            # TODO: Once we have path finding, move this to objects themselves (like desks) to simulate processing time
+            # We don't want to tick too fast or actions go by too quick (and faster frame rate = faster code)
+            if math.floor(self.cur_time) < math.floor(self.cur_time + delta_time):
+                self.execution_step()
+
+            self.cur_time += delta_time
 
     def execution_step(self):
         for desk in self.desks:
