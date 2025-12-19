@@ -28,10 +28,16 @@ class MenuLevel(ChalkLevel):
         super().setup(owner)
         self.player = self.actors[0]
 
-        self.interactables["desk b"].interact = self.load_level_1
-
+        # TODO: Do we need to construct the documents too?
+        self.interactables["desk a"].documents.add(1) # Normally this would be a range of documents
+        
+        # Tell this desk that when it recieves a document it should load level 1
+        self.interactables["desk b"].doc_handling = self.load_level_1
+        
     def execution_step(self):
         super().execution_step()
 
-    def load_level_1(self):
+    def load_level_1(self, doc_id):
+        # TODO: this instantly loads could be bad if things need to finish? (Like this desk)
         self.owner.add_level(Level1)
+        return True

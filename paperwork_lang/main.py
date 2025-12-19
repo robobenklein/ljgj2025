@@ -2,6 +2,7 @@
 
 import arcade
 import random
+
 from .cpu_game import GameplayView
 
 

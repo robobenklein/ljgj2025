@@ -6,6 +6,8 @@ from .parser import (
     parse, tree_to_ast, _Instruction,
 )
 
+from .inventory import ActorInventory
+
 
 class ChalkActor(arcade.Sprite):
     """
@@ -22,8 +24,11 @@ class ChalkActor(arcade.Sprite):
         self.ast = None
         self.cur_instruction = None
         self.instructions = None
-
         self.name = tobj.name
+        
+        # TODO: Allow specifying inventory capacity for docs/box/carts (two arms, two carts? Stack boxes?)
+        #   Right now it's unlimited space
+        self.inventory = ActorInventory()
 
         # determine position based on the object bounds:
         assert len(tobj.shape) == 2, f"actor map object shape should be 2D spawn point"
@@ -76,32 +81,114 @@ class ChalkActor(arcade.Sprite):
 
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
-        moveToObj = self.level.interactables[
-            f"{params.location_type} {params.location_identifier}"
-        ];
+        interactableID = f"{params.location_type} {params.location_identifier}"
+        if interactableID in self.level.interactables:
+            moveToObj = self.level.interactables[interactableID]
+        else:
+            return
 
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
         if moveToObj.__class__ == Desk:
             match moveToObj.access_side:
                 case "top":
                     endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
+                    endDirection_degrees = 0
                 case "bottom":
                     endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - self.height / 2)
+                    endDirection_degrees = 180
                 case "left":
                     endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
+                    endDirection_degrees = 270
                 case "right":
                     endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
+                    endDirection_degrees = 90
+        else:
+            raise NotImplementedError
 
         # TODO: Pathfind instead of teleportation
         self.position = endPoint
-        
-        # TODO: Move this to the Drop Instruction
-        if moveToObj.__class__ == Desk and hasattr(moveToObj, "interact"):
-            moveToObj.interact()
+        self.angle = endDirection_degrees
 
         # if we have reached the destination of the move command:
         # step the instruction pointer forward
         self.cur_instruction += 1
+
+    def InsTake(self, params):
+        # Find the interactable in 'front' of us, if there exists one (otherwise fail)
+        match self.angle:
+            case 0: # Facing down
+                overlapRect = arcade.XYWH(self.center_x, self.center_y - self.width / 2, self.width, self.height * 2)
+            case 90: # Facing left
+                overlapRect = arcade.XYWH(self.center_x - self.width / 2, self.center_y, self.width * 2, self.height)
+            case 180: # Facing up
+                overlapRect = arcade.XYWH(self.center_x, self.center_y + self.width / 2, self.width, self.height * 2)
+            case 270: # Facing right
+                overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
+            case _: # If we are not axis aligned, then we are not at a desk
+                return
+
+        # TODO: Make the interactables also contain sprite lists to iterate through?
+        overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
+        if len(overlaps) == 0:
+            print(f"InsDrop debug no overlaps")
+            return
+
+        # TODO: Should only be 1 overlap, but could be a bug later
+        interactable = overlaps[0]
+        if len(overlaps) > 1:
+            print(f"InsDrop overlapped with {len(overlaps)} objects! Defaulting to the first right now")
+
+        if params.parcel_type == "doc" or params.parcel_type == "any":
+            if interactable.__class__ == Desk:
+                # TODO: Test with no ID, the desk should set it
+                # If the object can take the document, remove it from our inventory
+                if interactable.interact(params):
+                    print(f"InsTake retrieved doc: {params.parcel_identifier}")
+                    self.inventory.add_item(params)
+                    
+                return
+            elif params.parcel_type != "any": # Can only take docs from desks
+                return
+            # Let 'any' try the other options
+        
+        # TODO: Handle other types
+
+    def InsDrop(self, params):
+        if self.inventory.contains_item(params) == False:
+            print(f"InsDrop debug no item")
+            return
+
+        # TODO: Handle 'ANY' type
+        # Docs must be at a desk to drop them (Don't want to scatter paapers all over the floor!)
+        if params.parcel_type == "doc":
+            # Find the interactable in 'front' of us, if there exists one (otherwise fail)
+            match self.angle:
+                case 0: # Facing down
+                    overlapRect = arcade.XYWH(self.center_x, self.center_y - self.width / 2, self.width, self.height * 2)
+                case 90: # Facing left
+                    overlapRect = arcade.XYWH(self.center_x - self.width / 2, self.center_y, self.width * 2, self.height)
+                case 180: # Facing up
+                    overlapRect = arcade.XYWH(self.center_x, self.center_y + self.width / 2, self.width, self.height * 2)
+                case 270: # Facing right
+                    overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
+                case _: # If we are not axis aligned, then we are not at a desk
+                    return
+
+            overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
+            if len(overlaps) == 0:
+                print(f"InsDrop debug no overlaps")
+                return
+
+            # TODO: Should only be 1 overlap, but could be a bug later
+            interactable = overlaps[0]
+            if len(overlaps) > 1:
+                print(f"InsDrop overlapped with {len(overlaps)} objects! Defaulting to the first right now")
+
+            # If the object can take the document, remove it from our inventory
+            if interactable.interact(params):
+                self.inventory.remove_item(params)
+
+        # TODO: Handle other types
 
 class Desk(arcade.Sprite):
     def __init__(self):
@@ -130,8 +217,32 @@ class Desk(arcade.Sprite):
         self.access_side = tobj.properties["access_side"];
         print(f"desk access-side {self.access_side}")
 
+        self.documents = set()
+        self.doc_handling = lambda *_: None
 
     def tick(self):
-        # TODO: what does a desk need to update each game tick?
-        # probably something related to game logic (win state checks and inbox/outboxing?)
+        # TODO: Don't tick when we don't need to?
+
+        stopTicking = True
+        for doc in self.documents:
+            print(f"{self.name} handling doc {doc}")
+            if self.doc_handling(doc) == False:
+                stopTicking = False
+
         pass
+
+    def interact(self, params):
+        if params.__class__.__name__ == "InsTake":
+            if params.parcel_identifier in self.documents:
+                print(f"{self.name} removing {params.parcel_type} {params.parcel_identifier}")
+                self.documents.remove(params.parcel_identifier)
+            else:
+                return False
+        elif params.__class__.__name__ == "InsDrop":
+            print(f"{self.name} adding {params.parcel_type} {params.parcel_identifier}")
+            self.documents.add(params.parcel_identifier)
+            # TODO: Start ticking (when it's not on by default)
+        else:
+            raise NotImplementedError 
+
+        return True
