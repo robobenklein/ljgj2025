@@ -96,7 +96,7 @@ class ChalkLevel(arcade.Scene):
         if self.running:
             # TODO: Once we have path finding, move this to objects themselves (like desks) to simulate processing time
             # We don't want to tick too fast or actions go by too quick (and faster frame rate = faster code)
-            if self.time_step == 0 or math.floor(self.cur_time + delta_time) - math.floor(self.cur_time) >= self.time_step:
+            if self.time_step == 0 or (self.cur_time + delta_time) - math.floor(self.cur_time) >= self.time_step:
                 self.execution_step()
 
             self.cur_time += delta_time

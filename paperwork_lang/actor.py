@@ -322,7 +322,6 @@ class Desk(arcade.Sprite):
     def interact(self, params):
         match params.__class__.__name__:
             case "InsTake":
-                print(f"{self.name} running InsTakes and has docs: {self.documents}")
                 if params.parcel_identifier == None:
                     if len(self.documents) :
                         print(f"Docs: {self.documents}")

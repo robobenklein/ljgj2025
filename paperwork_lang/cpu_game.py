@@ -332,7 +332,6 @@ class GameplayView(arcade.View):
 
     def on_reset(self, event: arcade.gui.UIOnClickEvent):
         self.level.execution_end()
-        self.level.running = False
         self.reset_level()
 
     def reset_level(self):
