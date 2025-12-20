@@ -73,21 +73,28 @@ class InsDrop(_Instruction):
 
 @dataclass
 class TestSubject(_Ast):
-    subject_type: str
+    subject_type: str # TODO: Need to handle when we carry multiple things
     subject_property: str
+
+    def __str__(self):
+        return f"TestSubject(\nsubject_type={self.subject_type}\nsubject_property={self.subject_property})".replace('\n', '\n\t')
 
 @dataclass
 class TestCondition(_Ast):
     test_subject: TestSubject
     test_value: Optional[int | str] = None
 
+    def __str__(self):
+        return f"TestCondition(\ntest_subject={self.test_subject}\ntest_value={self.test_value})".replace('\n', '\n\t')
+
 @dataclass
 class InsWhen(_Instruction):
     test_condition: TestCondition
-    instruction: _Instruction
+    #instruction: _Instruction # TODO: We can assume the next line is the instruction
 
     def __str__(self):
-        return f"InsWhen(\ncondition={self.test_condition},\ninstruction={self.instruction})".replace('\n', '\n\t')
+        return f"InsWhen(\ntest_condition={self.test_condition})".replace('\n', '\n\t')
+        #return f"InsWhen(\ntest_condition={self.test_condition},\ninstruction={self.instruction})".replace('\n', '\n\t')
 
 @v_args(meta=True)
 class ToAst(Transformer):

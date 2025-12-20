@@ -4,6 +4,8 @@ import arcade
 from ..assets import assets_dir, levels_dir
 from ..actor import ChalkActor, Desk
 from ..level import ChalkLevel
+from ..itemfactory import ItemFactory
+
 from .level1 import Level1
 
 class PlayerActor(ChalkActor):
@@ -28,9 +30,6 @@ class MenuLevel(ChalkLevel):
         super().setup(owner)
         self.player = self.actors[0]
 
-        # TODO: Do we need to construct the documents too?
-        self.interactables["desk a"].documents.add(1) # Normally this would be a range of documents
-        
         # Tell this desk that when it recieves a document it should load level 1
         self.interactables["desk b"].doc_handling = self.load_level_1
 
@@ -40,7 +39,9 @@ class MenuLevel(ChalkLevel):
         for desk in self.interactables.values():
             desk.documents.clear()
 
-        self.interactables["desk a"].documents.add(1)
+        print(f"Docs before: {self.interactables["desk a"].documents}")
+        self.interactables["desk a"].documents.update(ItemFactory.factory("doc", range(1)))
+        print(f"Docs after: {self.interactables["desk a"].documents}")
 
     def execution_step(self):
         super().execution_step()

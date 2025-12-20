@@ -2,11 +2,15 @@
 import arcade
 import lark
 
+from collections import namedtuple
+ParcelParams = namedtuple("ParcelParams", ["parcel_type", "parcel_identifier"])
+
 from .assets import assets_dir
 from .parser import (
-    parse, tree_to_ast, _Instruction,
+    parse, tree_to_ast, _Instruction, InsDrop
 )
 from .inventory import ActorInventory
+from .itemfactory import ItemFactory
 
 
 class ChalkActor(arcade.Sprite):
@@ -78,7 +82,7 @@ class ChalkActor(arcade.Sprite):
         while not isinstance(instruction, _Instruction):
             label = instruction.split('#', 1)[1].lstrip()
             self.labels[label] = self.cur_instruction
-            
+
             self.cur_instruction += 1
             if self.cur_instruction >= len(self.instructions):
                 self.cur_instruction = 0
@@ -142,32 +146,36 @@ class ChalkActor(arcade.Sprite):
         # TODO: Make the interactables also contain sprite lists to iterate through?
         overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
         if len(overlaps) == 0:
-            print(f"InsDrop debug no overlaps")
+            print(f"InsTake debug no overlaps")
             return True
 
         # TODO: Should only be 1 overlap, but could be a bug later
         interactable = overlaps[0]
         if len(overlaps) > 1:
-            print(f"InsDrop overlapped with {len(overlaps)} objects! Defaulting to the first right now")
+            print(f"InsTake overlapped with {len(overlaps)} objects! Defaulting to the first right now")
 
         if params.parcel_type == "doc" or params.parcel_type == "any":
             if interactable.__class__ == Desk:
-                # TODO: Test with no ID, the desk should set it
                 # If the object can take the document, remove it from our inventory
-                if interactable.interact(params):
-                    print(f"InsTake retrieved doc: {params.parcel_identifier}")
-                    self.inventory.add_item(params)
-                    
+                ID = interactable.interact(params)
+                if ID >= 0:
+                    if ID == params.parcel_identifier:
+                        print(f"InsTake retrieved doc: {params.parcel_identifier}")
+                        self.inventory.add_item(params)
+                    else:
+                        print(f"InsTake retrieved doc: {ID}")
+                        self.inventory.add_item(ParcelParams("doc", ID))
+
                 return True
             elif params.parcel_type != "any": # Can only take docs from desks
                 return True
             # Let 'any' try the other options
-        
+
         # TODO: Handle other types
 
     def InsDrop(self, params):
         if self.inventory.contains_item(params) == False:
-            print(f"InsDrop debug no item")
+            print(f"InsDrop actor {self.name} does not contain item {params.parcel_type} with ID {params.parcel_identifier}")
             return True
 
         # TODO: Handle 'ANY' type
@@ -197,13 +205,55 @@ class ChalkActor(arcade.Sprite):
                 print(f"InsDrop overlapped with {len(overlaps)} objects! Defaulting to the first right now")
 
             # If the object can take the document, remove it from our inventory
-            if interactable.interact(params):
-                self.inventory.remove_item(params)
+            if params.parcel_identifier != None:
+                if interactable.interact(params):
+                    self.inventory.remove_item(params)
+            else:
+                # Specifically need to make a InsDrop so the interactable knows it's getting an item
+                newParams = InsDrop(params.parcel_type, self.inventory.get_first_itemID(params.parcel_type))
+                if interactable.interact(newParams):
+                    self.inventory.remove_item(newParams)
 
         # TODO: Handle other types
 
     def InsWhen(self, params):
-        print(params)
+        def InventoryCheck(params):
+            if self.inventory.contains_item(ParcelParams(params.test_condition.test_subject.subject_type, None)):
+                item_id = self.inventory.get_first_itemID(params.test_condition.test_subject.subject_type)
+                print(f"Retrived item type {params.test_condition.test_subject.subject_type} with ID {item_id}")
+
+                item = ItemFactory.get_item(params.test_condition.test_subject.subject_type, item_id)
+                if item == None:
+                    print(f"No item {params.test_condition.test_subject.subject_type} with ID {item_id}")
+                    return # Should not happen
+
+                print(f"Retrived item {params.test_condition.test_subject.subject_type} with ID {item_id}")
+                if hasattr(item, params.test_condition.test_subject.subject_property):
+                    print(f"Property {params.test_condition.test_subject.subject_property} has value {getattr(item, params.test_condition.test_subject.subject_property)}")
+                    if params.test_condition.test_value == None or getattr(item, params.test_condition.test_subject.subject_property) == params.test_condition.test_value:
+                        return
+                else:
+                    print(f"{params.test_condition.test_subject.subject_type} does not have property: {params.test_condition.test_subject.subject_property}")
+
+            self.cur_instruction += 1 # Skip the next instruction, the condition failed
+
+        match params.test_condition.test_subject.subject_type:
+            case "doc":
+                InventoryCheck(params)
+
+            case "crate":
+                InventoryCheck(params)
+
+            case "cart":
+                InventoryCheck(params)
+
+            case "floor":
+                raise NotImplementedError
+                
+            case "building":
+                raise NotImplementedError
+
+        return True;
 
     def InsGoto(self, params):
         if params.label_name in self.labels:
@@ -254,17 +304,25 @@ class Desk(arcade.Sprite):
         pass
 
     def interact(self, params):
-        if params.__class__.__name__ == "InsTake":
-            if params.parcel_identifier in self.documents:
-                print(f"{self.name} removing {params.parcel_type} {params.parcel_identifier}")
-                self.documents.remove(params.parcel_identifier)
-            else:
-                return False
-        elif params.__class__.__name__ == "InsDrop":
-            print(f"{self.name} adding {params.parcel_type} {params.parcel_identifier}")
-            self.documents.add(params.parcel_identifier)
-            # TODO: Start ticking (when it's not on by default)
-        else:
-            raise NotImplementedError 
+        match params.__class__.__name__:
+            case "InsTake":
+                if params.parcel_identifier == None:
+                    if len(self.documents) :
+                        print(f"Docs: {self.documents}")
+                        for i in self.documents:
+                            self.documents.remove(i)
+                            return i
+                elif params.parcel_identifier in self.documents:
+                    print(f"{self.name} removing {params.parcel_type} {params.parcel_identifier}")
+                    self.documents.remove(params.parcel_identifier)
+                    return params.parcel_identifier
 
-        return True
+            case "InsDrop":
+                # TODO: Start ticking (when it's not on by default)
+                print(f"{self.name} adding {params.parcel_type} {params.parcel_identifier}")
+                self.documents.add(params.parcel_identifier)
+                return params.parcel_identifier
+            case _:
+                raise NotImplementedError(params.__class__.__name__)
+
+        return -1

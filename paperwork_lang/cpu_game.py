@@ -337,9 +337,6 @@ class GameplayView(arcade.View):
 
         self.ticking_realtime = False
         self.ticking_start.text = "Start"
-        
-        self.current_input_actor_name = ""
-        self.current_input_actor_UI.text = "Currently editing actor: NONE"
 
         self.camera_world.update_values(self.camera_world_space.rect)
         # move the camera so we can see the whole level now:

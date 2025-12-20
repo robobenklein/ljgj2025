@@ -40,7 +40,8 @@ ins_goto: "GOTO"i _WS label_name
 // first conditional type statement
 // this statement is always followed by a single other statement
 // (most commonly a GOTO if we're being honest)
-ins_when: "WHEN"i _WS test_condition _LINE_END _instruction
+//ins_when: "WHEN"i _WS test_condition _LINE_END _instruction
+ins_when: "WHEN"i _WS test_condition
 // a test_condition will always result in Truthy/Falsy
 // e.g. WHEN building.on_fire or
 // doc.id 24 (implied operator is "IS")
