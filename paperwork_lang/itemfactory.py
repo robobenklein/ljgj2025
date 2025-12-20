@@ -26,7 +26,7 @@ class ItemFactory():
 
     @classmethod
     def factory(cls, type, itemRange):
-        returnIDs = set()
+        returnIDs = []
 
         item_count = len(cls.items[type]);
         if item_count < itemRange[-1] + 1:
@@ -34,10 +34,10 @@ class ItemFactory():
             items = cls.items[type]
             for i in itemRange:
                 items.append(item_constructor(i))
-                returnIDs.add(i)
+                returnIDs.append(i)
         else:
             for i in itemRange:
-                returnIDs.add(i)
+                returnIDs.append(i)
 
         return returnIDs
 

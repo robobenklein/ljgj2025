@@ -40,13 +40,13 @@ class MenuLevel(ChalkLevel):
             desk.documents.clear()
 
         print(f"Docs before: {self.interactables["desk a"].documents}")
-        self.interactables["desk a"].documents.update(ItemFactory.factory("doc", range(1)))
+        self.interactables["desk a"].documents = (ItemFactory.factory("doc", range(1)))
         print(f"Docs after: {self.interactables["desk a"].documents}")
 
     def execution_step(self):
         super().execution_step()
 
-    def load_level_1(self, doc_id):
+    def load_level_1(self, desk, doc_id):
         # TODO: this instantly loads could be bad if things need to finish? (Like this desk)
         self.owner.add_level(Level1)
         return True

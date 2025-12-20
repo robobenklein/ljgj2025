@@ -62,8 +62,15 @@ class ChalkActor(arcade.Sprite):
         self.instructions = self.ast.lines
         self.labels = {}
 
-        for i in self.instructions:
-            print(i)
+        cur_instruction = 0
+        for instruction in self.instructions:
+            print(instruction)
+            if not isinstance(instruction, _Instruction) and instruction[0] == '#':
+                label = instruction.split('#', 1)[1].strip()
+                print(f"Adding label: {label}")
+                self.labels[label] = cur_instruction
+
+            cur_instruction += 1
 
     def tick(self):
         if not self.instructions:
@@ -80,9 +87,6 @@ class ChalkActor(arcade.Sprite):
         instruction = self.instructions[self.cur_instruction]
         print(f"line {self.cur_instruction} code: {instruction}")
         while not isinstance(instruction, _Instruction):
-            label = instruction.split('#', 1)[1].lstrip()
-            self.labels[label] = self.cur_instruction
-
             self.cur_instruction += 1
             if self.cur_instruction >= len(self.instructions):
                 self.cur_instruction = 0
@@ -96,6 +100,9 @@ class ChalkActor(arcade.Sprite):
             # if we have finished the command:
             # step the instruction pointer forward
             self.cur_instruction += 1
+        else:
+            print(f"Actor {self.name} executing instruction {instruction.__class__.__name__}!")
+            
 
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
@@ -206,13 +213,17 @@ class ChalkActor(arcade.Sprite):
 
             # If the object can take the document, remove it from our inventory
             if params.parcel_identifier != None:
-                if interactable.interact(params):
+                if interactable.interact(params) > -1:
+                    print(f"{self.name}'s before inventory: {self.inventory.item_map}")
                     self.inventory.remove_item(params)
             else:
                 # Specifically need to make a InsDrop so the interactable knows it's getting an item
                 newParams = InsDrop(params.parcel_type, self.inventory.get_first_itemID(params.parcel_type))
-                if interactable.interact(newParams):
+                if interactable.interact(newParams) > -1:
+                    print(f"{self.name}'s before inventory: {self.inventory.item_map}")
                     self.inventory.remove_item(newParams)
+
+            return True
 
         # TODO: Handle other types
 
@@ -229,8 +240,12 @@ class ChalkActor(arcade.Sprite):
 
                 print(f"Retrived item {params.test_condition.test_subject.subject_type} with ID {item_id}")
                 if hasattr(item, params.test_condition.test_subject.subject_property):
-                    print(f"Property {params.test_condition.test_subject.subject_property} has value {getattr(item, params.test_condition.test_subject.subject_property)}")
-                    if params.test_condition.test_value == None or getattr(item, params.test_condition.test_subject.subject_property) == params.test_condition.test_value:
+                    subjProp = getattr(item, params.test_condition.test_subject.subject_property)
+                    if hasattr(subjProp, "lower"):
+                        subjProp = subjProp.lower()
+                        
+                    print(f"Property {params.test_condition.test_subject.subject_property} has value {subjProp}")
+                    if params.test_condition.test_value == None or subjProp == params.test_condition.test_value:
                         return
                 else:
                     print(f"{params.test_condition.test_subject.subject_type} does not have property: {params.test_condition.test_subject.subject_property}")
@@ -259,7 +274,7 @@ class ChalkActor(arcade.Sprite):
         if params.label_name in self.labels:
             self.cur_instruction = self.labels[params.label_name]
         else:
-            print(f"Unknown label: {params.label_name}")
+            print(f"Unknown label: {params.label_name}, labels: {self.labels}")
 
         return True
 
@@ -290,7 +305,7 @@ class Desk(arcade.Sprite):
         self.access_side = tobj.properties["access_side"];
         print(f"desk access-side {self.access_side}")
 
-        self.documents = set()
+        self.documents = []
         self.doc_handling = lambda *_: None
 
     def tick(self):
@@ -299,7 +314,7 @@ class Desk(arcade.Sprite):
         stopTicking = True
         tempList = self.documents # In case the doc IDs are removed in the handler
         for doc in tempList:
-            if self.doc_handling(doc) == False:
+            if self.doc_handling(self, doc) == False:
                 stopTicking = False
 
         pass
@@ -307,6 +322,7 @@ class Desk(arcade.Sprite):
     def interact(self, params):
         match params.__class__.__name__:
             case "InsTake":
+                print(f"{self.name} running InsTakes and has docs: {self.documents}")
                 if params.parcel_identifier == None:
                     if len(self.documents) :
                         print(f"Docs: {self.documents}")
@@ -321,7 +337,7 @@ class Desk(arcade.Sprite):
             case "InsDrop":
                 # TODO: Start ticking (when it's not on by default)
                 print(f"{self.name} adding {params.parcel_type} {params.parcel_identifier}")
-                self.documents.add(params.parcel_identifier)
+                self.documents.append(params.parcel_identifier)
                 return params.parcel_identifier
             case _:
                 raise NotImplementedError(params.__class__.__name__)
