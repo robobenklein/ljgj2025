@@ -3,6 +3,8 @@ from pathlib import Path
 import random
 import arcade
 import arcade.gui
+import pyperclip
+import keyboard
 
 from .assets import assets_dir, starter_code
 from .levels.mainmenu import MenuLevel
@@ -228,6 +230,10 @@ class GameplayView(arcade.View):
         )
 
     def on_draw(self):
+        if keyboard.is_pressed("ctrl") and keyboard.is_pressed("v"):
+            print(pyperclip.paste())
+            self.code_editor_actor.text = pyperclip.paste()
+
         """
         keep this function minimal
         it runs on every *frame*, not just game ticks

@@ -48,3 +48,7 @@ class ItemFactory():
             return items[ID]
 
         return None
+        
+    @classmethod
+    def clear_items(cls, type):
+        cls.items[type].clear()

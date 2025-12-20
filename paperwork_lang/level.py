@@ -38,6 +38,7 @@ class ChalkLevel(arcade.Scene):
         self.running = False
         self.tile_map = None
         self.tile_bounds = None
+        self.time_step = 1
 
     # Load any extra data that should persist untill the level is destroyed
     def setup(self, owner):
@@ -77,6 +78,7 @@ class ChalkLevel(arcade.Scene):
     # Will reset any existing data if called again
     def load(self):
         self.cur_time = 0
+        self.tick_count = 0
 
         for actor_tobj in self.tile_map.object_lists['actors']:
             self.actor_lookup[actor_tobj.name].setup(actor_tobj, self)
@@ -94,7 +96,7 @@ class ChalkLevel(arcade.Scene):
         if self.running:
             # TODO: Once we have path finding, move this to objects themselves (like desks) to simulate processing time
             # We don't want to tick too fast or actions go by too quick (and faster frame rate = faster code)
-            if math.floor(self.cur_time) < math.floor(self.cur_time + delta_time):
+            if self.time_step == 0 or math.floor(self.cur_time + delta_time) - math.floor(self.cur_time) >= self.time_step:
                 self.execution_step()
 
             self.cur_time += delta_time
@@ -105,6 +107,8 @@ class ChalkLevel(arcade.Scene):
 
         for actor in self.actors:
             actor.tick()
+
+        self.tick_count += 1
 
     def execution_end(self):
         self.running = False

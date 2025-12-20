@@ -297,7 +297,8 @@ class Desk(arcade.Sprite):
         # TODO: Don't tick when we don't need to?
 
         stopTicking = True
-        for doc in self.documents:
+        tempList = self.documents # In case the doc IDs are removed in the handler
+        for doc in tempList:
             if self.doc_handling(doc) == False:
                 stopTicking = False
 
