@@ -47,28 +47,26 @@ class Level1(ChalkLevel):
                 self.c_doc_count = 5
                 self.spam_doc_count = 6
 
-                self.time_step = 1 # Tick every ~60 frames
+                self.time_step = .5 # Tick every 30 frames TODO: Change to button 
 
             # Then larger random amount and order
             case 1:
                 min = 10
-                max = 15 + 1
+                max = 25 + 1
                 self.a_doc_count = random.randrange(min, max)
                 self.b_doc_count = random.randrange(min, max)
                 self.c_doc_count = random.randrange(min, max)
                 self.spam_doc_count = random.randrange(min, max)
 
-                self.time_step = .5 # Tick every ~30 frames
+                self.time_step = .25 # Tick every ~15 frames
 
-            # Finally much larger random amount and order
+            # Finally much larger amount, but seeded random to allow others to compare times
             case 2:
-                if self.completed_once == False:
-                    min = 25
-                    max = 50 + 1
-                    self.a_doc_count = random.randrange(min, max)
-                    self.b_doc_count = random.randrange(min, max)
-                    self.c_doc_count = random.randrange(min, max)
-                    self.spam_doc_count = random.randrange(min, max)
+                max = 30
+                self.a_doc_count = max
+                self.b_doc_count = max
+                self.c_doc_count = max
+                self.spam_doc_count = max
 
                 self.time_step = 0 # Tick every frame
 
@@ -87,10 +85,10 @@ class Level1(ChalkLevel):
         for i in range(self.a_doc_count + self.b_doc_count, self.a_doc_count + self.b_doc_count + self.c_doc_count):
             ItemFactory.get_item("doc", i).dest = "c"
 
-        desinations = ["a", "b", "c"]
+        destinations = ["a", "b", "c"]
         for i in range(self.a_doc_count + self.b_doc_count + self.c_doc_count,  self.a_doc_count + self.b_doc_count + self.c_doc_count + self.spam_doc_count):
             doc = ItemFactory.get_item("doc", i)
-            doc.dest = desinations[random.randrange(0, len(desinations))]
+            doc.dest = destinations[random.randrange(0, len(destinations))] # The des can still be rand in the last test, should be no diff to the time it takes
             doc.spam = True
 
         # Randomize the document_ids order
@@ -98,6 +96,9 @@ class Level1(ChalkLevel):
         if self.iter_count > 0:
             if self.completed_once == False:
                 random.shuffle(documentIDs)
+            else:
+                random.Random("paperwork").shuffle(documentIDs)
+
         else:
             # a, a, spam, b, b, spam, c, c, spam,
             # a, a, spam, b, b, spam, c, c, spam,
@@ -108,12 +109,9 @@ class Level1(ChalkLevel):
                 4, self.a_doc_count + 4, self.a_doc_count + self.b_doc_count + 4
             ]
 
-        if self.completed_once == False:
-            self.document_ids = documentIDs
+        print(f"ids now {documentIDs}")
 
-        print(f"ids now {self.document_ids}")
-
-        # Tell this desk that when it recieves a document it should load level 1
+        # Tell this desk that when it receives a document it should load level 1
         for interactable_name in self.interactables.keys():
             print(f"Seting up {interactable_name}")
             desk = self.interactables[interactable_name]
@@ -135,7 +133,7 @@ class Level1(ChalkLevel):
                     desk.correct_doc_count = 0
 
                 case "desk inbox":
-                    desk.documents = self.document_ids
+                    desk.documents = documentIDs
 
     def document_abc_handler(level, desk, doc_id):
             desk.documents.remove(doc_id)
@@ -185,7 +183,7 @@ class Level1(ChalkLevel):
             # YAY! Completed!
             print(f"You finished the level in {math.ceil(self.tick_count)} ticks! Can you do better?")
             # TODO: The documents container is not persisting
-            print(f"Using the same doc amounts and order and skipping test 1 and 2 so you can beat your time! Leave and re-open the level to fully reset it. (This is broken, sorry)")
+            print(f"Skipping test 1 and 2 so you can beat your time! Leave and re-open the level to fully reset it. (Level 3 is the same every time, only 2 is random amounts and order)")
             self.execution_end()
             self.owner.reset_level() # TODO: This executes too soon
             self.iter_count = 2

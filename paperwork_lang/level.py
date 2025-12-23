@@ -38,9 +38,9 @@ class ChalkLevel(arcade.Scene):
         self.running = False
         self.tile_map = None
         self.tile_bounds = None
-        self.time_step = 1
+        self.time_step = .5 # every 60 frames seems too slow TODO: (possibly make it an option in a button)
 
-    # Load any extra data that should persist untill the level is destroyed
+    # Load any extra data that should persist until the level is destroyed
     def setup(self, owner):
         self.desks = arcade.SpriteList()
         self.actors = arcade.SpriteList()
@@ -96,7 +96,9 @@ class ChalkLevel(arcade.Scene):
         if self.running:
             # TODO: Once we have path finding, move this to objects themselves (like desks) to simulate processing time
             # We don't want to tick too fast or actions go by too quick (and faster frame rate = faster code)
-            if self.time_step == 0 or (self.cur_time + delta_time) - math.floor(self.cur_time) >= self.time_step:
+            timeCheck = self.cur_time - self.tick_count * self.time_step 
+            if self.time_step == 0 or (timeCheck + delta_time) - math.floor(timeCheck) >= self.time_step:
+                print(f"executed time: {timeCheck}")
                 self.execution_step()
 
             self.cur_time += delta_time
