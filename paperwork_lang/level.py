@@ -42,31 +42,31 @@ class ChalkLevel(arcade.Scene):
 
     # Load any extra data that should persist until the level is destroyed
     def setup(self, owner):
-        self.desks = self.add_sprite_list(
+        self.desk_sprites = self.add_sprite_list(
             "Desks",
             use_spatial_hash=True,
         ) # Make now so desks can add more sprites to it, like text on top of them
-        self.actors = self.add_sprite_list(
+        self.actor_sprites = self.add_sprite_list(
             "Actors",
             use_spatial_hash=False,
         ) # Make now so actors can add more sprites to it, like text that follow them
         self.interactables = {}
-        self.actor_lookup = {}
+        self.actors = {}
         self.owner = owner
 
         for desk_tobj in self.tile_map.object_lists['desks']:
             print(f"load desk {desk_tobj}")
             desk = Desk()
-            self.desks.append(desk)
+            self.desk_sprites.append(desk)
             desk.setup(desk_tobj, self)
             self.interactables[desk.name.lower()] = desk     
 
         for actor_tobj in self.tile_map.object_lists['actors']:
             print(f"load actor {actor_tobj}")
             actor = ChalkActor()
-            self.actors.append(actor)
+            self.actor_sprites.append(actor)
             actor.setup(actor_tobj, self)
-            self.actor_lookup[actor.name.lower()] = actor
+            self.actors[actor.name.lower()] = actor
 
     # Load any non-persistent data that we don't need to keep around when unloaded
     # Will reset any existing data if called again
@@ -75,7 +75,7 @@ class ChalkLevel(arcade.Scene):
         self.tick_count = 0
 
         for actor_tobj in self.tile_map.object_lists['actors']:
-            self.actor_lookup[actor_tobj.name.lower()].setup(actor_tobj, self)
+            self.actors[actor_tobj.name.lower()].setup(actor_tobj, self)
 
     # Unload anything we don't need to keep
     def unload(self):
@@ -83,7 +83,7 @@ class ChalkLevel(arcade.Scene):
 
     def execution_start(self):
         self.running = True
-        for actor in self.actors:
+        for actor in self.actors.values():
             actor.load_code_block(actor.saved_code_block)
 
     def execution_tick(self, delta_time):
@@ -101,7 +101,7 @@ class ChalkLevel(arcade.Scene):
             interactable.tick()
 
         # Tick actors after so the interactables are not interacted with and update on the same tick
-        for actor in self.actor_lookup.values():
+        for actor in self.actors.values():
             actor.tick()
 
         self.tick_count += 1

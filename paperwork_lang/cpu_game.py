@@ -87,9 +87,10 @@ class GameplayView(arcade.View):
         @self.ticking_start.event("on_click")
         def on_click_start(event: arcade.gui.UIOnClickEvent):
             if self.ticking_start.text == "Start" and not self.level.running:
-                if self.current_input_actor_name in self.level.actor_lookup:
+                currentActor = self.current_input_actor_name.lower()
+                if currentActor in self.level.actors:
                     # Save the block so it can be loaded on execution 
-                    self.level.actor_lookup[self.current_input_actor_name].saved_code_block = self.code_editor_actor.text
+                    self.level.actors[currentActor].saved_code_block = self.code_editor_actor.text
 
             self.start_realtime_ticking()
 
@@ -98,9 +99,10 @@ class GameplayView(arcade.View):
         )
         @self.ticking_once.event("on_click")
         def on_click_once(event: arcade.gui.UIOnClickEvent):
-            if self.current_input_actor_name in self.level.actor_lookup:
+            currentActor = self.current_input_actor_name.lower()
+            if currentActor in self.level.actors:
                     # Save the block so it can be loaded on execution 
-                    self.level.actor_lookup[self.current_input_actor_name].saved_code_block = self.code_editor_actor.text
+                    self.level.actors[currentActor].saved_code_block = self.code_editor_actor.text
 
             self.do_single_tick()
             
@@ -270,7 +272,7 @@ class GameplayView(arcade.View):
         """
         print(f"text input change: {event}")
         if '\n' in event.new_value:
-            # TODO better "execute command" detection
+            # TODO better "execute command" detection, use the Window.on_key_press() for enter?
             self.code_input.text = event.old_value
         else:
             # nothing to execute here
@@ -292,11 +294,11 @@ class GameplayView(arcade.View):
         if button == arcade.MOUSE_BUTTON_LEFT:
             worldLocation = self.camera_world.unproject((x, y))
             if (worldLocation.x, worldLocation.y) in self.level.tile_bounds:
-                overlaps = arcade.get_sprites_in_rect(arcade.XYWH(worldLocation.x, worldLocation.y, 10, 10), self.level.actors)
+                overlaps = arcade.get_sprites_in_rect(arcade.XYWH(worldLocation.x, worldLocation.y, 10, 10), self.level.actor_sprites)
                 if len(overlaps):
                     if self.current_input_actor_name != "" and overlaps[0].name != self.current_input_actor_name:
                         # Save the code to the actor before we change to a new one
-                        self.level.actor_lookup[self.current_input_actor_name].saved_code_block = self.code_editor_actor.text
+                        self.level.actors[self.current_input_actor_name.lower()].saved_code_block = self.code_editor_actor.text
 
                     self.current_input_actor_name = overlaps[0].name
                     self.current_input_actor_UI.text = f"Currently editing actor: {self.current_input_actor_name}"

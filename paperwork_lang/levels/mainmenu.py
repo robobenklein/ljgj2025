@@ -28,7 +28,7 @@ class MenuLevel(ChalkLevel):
 
     def setup(self, owner):
         super().setup(owner)
-        self.player = self.actor_lookup["player"]
+        self.player = self.actors["player"]
 
         # Tell this desk that when it recieves a document it should load level 1
         self.interactables["desk b"].doc_handling = self.load_level_1

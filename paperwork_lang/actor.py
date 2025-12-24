@@ -35,18 +35,28 @@ class ChalkActor(arcade.Sprite):
         #   Right now it's unlimited space
         self.inventory = ActorInventory()
 
-        # determine position based on the object bounds:
+        self.angle = 0 # Set before the name_sprite to not trigger two pos sets
+
+        if hasattr(self, "name_sprite") == False:
+            fontSize = 24
+            self.name_sprite = arcade.create_text_sprite(f"{tobj.name}", arcade.color.WHITE, fontSize)
+            level.add_sprite("Actors", self.name_sprite)
+        
+        # determine position based on the object bounds: (set after the name_sprite so it updates position at the same time)
         assert len(tobj.shape) == 2, f"actor map object shape should be 2D spawn point"
         print(f"actor {self.name} at {tobj.shape}")
         self.position = tobj.shape
-        self.angle = 0
 
-        fontSize = 24
-        padding = 16
-        self.name_sprite = arcade.create_text_sprite(f"{tobj.name}", arcade.color.WHITE, fontSize)
-        self.name_sprite.position = (self.position[0], self.position[1] + self.width / 2 + padding)
-        level.add_sprite("Actors", self.name_sprite)
+    @arcade.Sprite.position.setter
+    def position(self, new_value: arcade.Point2):
+        arcade.Sprite.position.__set__(self, new_value)
+        self.set_name_position()
 
+    @arcade.Sprite.angle.setter
+    def angle(self, new_value: float):
+        arcade.Sprite.angle.__set__(self, new_value)
+        self.set_name_position() # Need to update if the angle changed
+            
     def load_code_block(self, block):
         """
         Loads the program into the actor and enables execution
@@ -108,7 +118,22 @@ class ChalkActor(arcade.Sprite):
             self.cur_instruction += 1
         else:
             print(f"Actor {self.name} executing instruction {instruction.__class__.__name__}!")
-            
+
+    def set_name_position(self):
+        if hasattr(self, "name_sprite"):
+            padding = 16            
+            match self.angle:
+                case 0: # up
+                    self.name_sprite.position = (self.position[0], self.position[1] + self.height / 2 + padding)
+
+                case 90: # left
+                    self.name_sprite.position = (self.position[0], self.position[1] + self.width / 4 + padding)
+
+                case 180: # down
+                    self.name_sprite.position = (self.position[0], self.position[1] - self.height / 2 - padding)
+
+                case 270: # right, same as left
+                    self.name_sprite.position = (self.position[0], self.position[1] + self.width / 4 + padding)            
 
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
