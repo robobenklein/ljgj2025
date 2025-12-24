@@ -42,8 +42,14 @@ class ChalkLevel(arcade.Scene):
 
     # Load any extra data that should persist until the level is destroyed
     def setup(self, owner):
-        self.desks = arcade.SpriteList()
-        self.actors = arcade.SpriteList()
+        self.desks = self.add_sprite_list(
+            "Desks",
+            use_spatial_hash=True,
+        ) # Make now so desks can add more sprites to it, like text on top of them
+        self.actors = self.add_sprite_list(
+            "Actors",
+            use_spatial_hash=False,
+        ) # Make now so actors can add more sprites to it, like text that follow them
         self.interactables = {}
         self.actor_lookup = {}
         self.owner = owner
@@ -52,36 +58,24 @@ class ChalkLevel(arcade.Scene):
             print(f"load desk {desk_tobj}")
             desk = Desk()
             self.desks.append(desk)
-            desk.setup(desk_tobj)
-            self.interactables[desk.name.lower()] = desk
-
-        self.add_sprite_list(
-            "Desks",
-            sprite_list=self.desks,
-            use_spatial_hash=True,
-        )
+            desk.setup(desk_tobj, self)
+            self.interactables[desk.name.lower()] = desk     
 
         for actor_tobj in self.tile_map.object_lists['actors']:
             print(f"load actor {actor_tobj}")
             actor = ChalkActor()
             self.actors.append(actor)
             actor.setup(actor_tobj, self)
-            self.actor_lookup[actor.name] = actor
+            self.actor_lookup[actor.name.lower()] = actor
 
-        self.add_sprite_list(
-            "Actors",
-            sprite_list=self.actors,
-            use_spatial_hash=False, # actors are expected to move a lot
-        )
-
-    # Load any non-persistant data that we don't need to keep around when unloaded
+    # Load any non-persistent data that we don't need to keep around when unloaded
     # Will reset any existing data if called again
     def load(self):
         self.cur_time = 0
         self.tick_count = 0
 
         for actor_tobj in self.tile_map.object_lists['actors']:
-            self.actor_lookup[actor_tobj.name].setup(actor_tobj, self)
+            self.actor_lookup[actor_tobj.name.lower()].setup(actor_tobj, self)
 
     # Unload anything we don't need to keep
     def unload(self):
@@ -98,16 +92,16 @@ class ChalkLevel(arcade.Scene):
             # We don't want to tick too fast or actions go by too quick (and faster frame rate = faster code)
             timeCheck = self.cur_time - self.tick_count * self.time_step 
             if self.time_step == 0 or (timeCheck + delta_time) - math.floor(timeCheck) >= self.time_step:
-                print(f"executed time: {timeCheck}")
                 self.execution_step()
 
             self.cur_time += delta_time
 
     def execution_step(self):
-        for desk in self.desks:
-            desk.tick()
+        for interactable in self.interactables.values():
+            interactable.tick()
 
-        for actor in self.actors:
+        # Tick actors after so the interactables are not interacted with and update on the same tick
+        for actor in self.actor_lookup.values():
             actor.tick()
 
         self.tick_count += 1

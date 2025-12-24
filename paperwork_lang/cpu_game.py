@@ -53,7 +53,7 @@ class GameplayView(arcade.View):
         )
         self.menuBox = arcade.gui.UIBoxLayout(
             vertical=True,
-            # take the whole vertical space, don't horiztonally
+            # take the whole vertical space, don't horizontally
             size_hint=(0,1)
         )
         self.menuBox.add(self.title_logo)
@@ -146,7 +146,6 @@ class GameplayView(arcade.View):
         self.current_input_actor_name = ""
         self.current_input_actor_UI = arcade.gui.UITextWidget(
             size_hint=(1, 0.1),
-            caret_color=arcade.color.WHITE,
             text="Currently editing actor: NONE"
         )
         self.menuBox.add(self.current_input_actor_UI)
@@ -164,7 +163,7 @@ class GameplayView(arcade.View):
         self.menuBox.add(self.code_editor_actor)
 
         # and it will control a 'player character',
-        self.camera_world_space = arcade.gui.UISpace(
+        self.camera_world_space = arcade.gui.UIAnchorLayout(
             size_hint=(1, 1),
         )
 
@@ -230,10 +229,6 @@ class GameplayView(arcade.View):
         )
 
     def on_draw(self):
-        if keyboard.is_pressed("ctrl") and keyboard.is_pressed("v"):
-            print(pyperclip.paste())
-            self.code_editor_actor.text = pyperclip.paste()
-
         """
         keep this function minimal
         it runs on every *frame*, not just game ticks
@@ -261,6 +256,11 @@ class GameplayView(arcade.View):
         self.manager.draw()
 
     def on_update(self, delta_time: float):
+        # TODO: Replace with arcade.Window.on_key_press()
+        if keyboard.is_pressed("ctrl") and keyboard.is_pressed("v"):
+            print(pyperclip.paste())
+            self.code_editor_actor.text = pyperclip.paste()
+    
         if self.ticking_realtime:
             self.level.execution_tick(delta_time)
 
@@ -337,9 +337,6 @@ class GameplayView(arcade.View):
     def reset_level(self):
         self._o_x, self._o_y = random.randrange(0, 512), random.randrange(0, 512)
 
-        # Reload any non-persistant data
-        self.level.load()
-
         self.ticking_realtime = False
         self.ticking_start.text = "Start"
 
@@ -357,6 +354,9 @@ class GameplayView(arcade.View):
 
         print(f"World camera viewport: {self.camera_world.viewport}")
         print(f"World camera position: {self.camera_world.position}")
+
+        # Reload any non-persistent data
+        self.level.load()
 
     def add_level(self, level):
         self.level = level.factory()

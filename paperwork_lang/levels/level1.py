@@ -92,7 +92,6 @@ class Level1(ChalkLevel):
             doc.spam = True
 
         # Randomize the document_ids order
-        print(f"ids before {documentIDs}")
         if self.iter_count > 0:
             if self.completed_once == False:
                 random.shuffle(documentIDs)
@@ -113,7 +112,7 @@ class Level1(ChalkLevel):
 
         # Tell this desk that when it receives a document it should load level 1
         for interactable_name in self.interactables.keys():
-            print(f"Seting up {interactable_name}")
+            print(f"Setting up {interactable_name}")
             desk = self.interactables[interactable_name]
             match interactable_name:
                 case "desk a":
@@ -182,7 +181,6 @@ class Level1(ChalkLevel):
         if self.iter_count == 3:
             # YAY! Completed!
             print(f"You finished the level in {math.ceil(self.tick_count)} ticks! Can you do better?")
-            # TODO: The documents container is not persisting
             print(f"Skipping test 1 and 2 so you can beat your time! Leave and re-open the level to fully reset it. (Level 3 is the same every time, only 2 is random amounts and order)")
             self.execution_end()
             self.owner.reset_level() # TODO: This executes too soon

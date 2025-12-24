@@ -28,7 +28,7 @@ class MenuLevel(ChalkLevel):
 
     def setup(self, owner):
         super().setup(owner)
-        self.player = self.actors[0]
+        self.player = self.actor_lookup["player"]
 
         # Tell this desk that when it recieves a document it should load level 1
         self.interactables["desk b"].doc_handling = self.load_level_1
@@ -39,9 +39,7 @@ class MenuLevel(ChalkLevel):
         for desk in self.interactables.values():
             desk.documents.clear()
 
-        print(f"Docs before: {self.interactables["desk a"].documents}")
         self.interactables["desk a"].documents = (ItemFactory.factory("doc", range(1)))
-        print(f"Docs after: {self.interactables["desk a"].documents}")
 
     def execution_step(self):
         super().execution_step()

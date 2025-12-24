@@ -41,6 +41,12 @@ class ChalkActor(arcade.Sprite):
         self.position = tobj.shape
         self.angle = 0
 
+        fontSize = 24
+        padding = 16
+        self.name_sprite = arcade.create_text_sprite(f"{tobj.name}", arcade.color.WHITE, fontSize)
+        self.name_sprite.position = (self.position[0], self.position[1] + self.width / 2 + padding)
+        level.add_sprite("Actors", self.name_sprite)
+
     def load_code_block(self, block):
         """
         Loads the program into the actor and enables execution
@@ -285,7 +291,7 @@ class Desk(arcade.Sprite):
             scale=1/4,
         )
 
-    def setup(self, tobj):
+    def setup(self, tobj, level):
         # original data from loading the Tiled object
         self._tobj = tobj
 
@@ -307,6 +313,16 @@ class Desk(arcade.Sprite):
 
         self.documents = []
         self.doc_handling = lambda *_: None
+
+        fontSize = 24
+        if len(tobj.name) == len("desk ."):
+            self.name_sprite = arcade.create_text_sprite(f"{tobj.name.title()}", arcade.color.WHITE, fontSize) # Desk A, Desk B, Desk C, etc.
+        else:
+            self.name_sprite = arcade.create_text_sprite(f"{tobj.name.split(' ')[1].title()}", arcade.color.WHITE, fontSize) # Remove the 'desk' from the name as it's longer than just a letter
+
+        padding = (2, 12)
+        self.name_sprite.position = (self.position[0] + padding[0], self.position[1] + padding[1])
+        level.add_sprite("Actors", self.name_sprite)
 
     def tick(self):
         # TODO: Don't tick when we don't need to?
