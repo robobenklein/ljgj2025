@@ -10,8 +10,6 @@ from .parser import (
     parse, tree_to_ast, _Instruction, InsDrop
 )
 from .inventory import ActorInventory
-from .itemfactory import ItemFactory
-
 
 class ChalkActor(arcade.Sprite):
     """
@@ -40,12 +38,16 @@ class ChalkActor(arcade.Sprite):
         if hasattr(self, "name_sprite") == False:
             fontSize = 24
             self.name_sprite = arcade.create_text_sprite(f"{tobj.name}", arcade.color.WHITE, fontSize)
-            level.add_sprite("Actors", self.name_sprite)
+            level.movable_text_sprites.append(self.name_sprite)
         
         # determine position based on the object bounds: (set after the name_sprite so it updates position at the same time)
-        assert len(tobj.shape) == 2, f"actor map object shape should be 2D spawn point"
+        assert len(tobj.shape) == 2, "actor map object shape should be 2D spawn point"
         print(f"actor {self.name} at {tobj.shape}")
         self.position = tobj.shape
+
+    def load(self, tobj):
+        self.angle = 0
+        self.position = tobj.shape   
 
     @arcade.Sprite.position.setter
     def position(self, new_value: arcade.Point2):
@@ -111,7 +113,7 @@ class ChalkActor(arcade.Sprite):
             instruction = self.instructions[self.cur_instruction]
             print(f"line {self.cur_instruction} code: {instruction}")
 
-        # make functions in this class the same as the intruction class name
+        # make functions in this class the same as the instruction class name
         if getattr(self, instruction.__class__.__name__)(instruction):
             # if we have finished the command:
             # step the instruction pointer forward
@@ -137,25 +139,24 @@ class ChalkActor(arcade.Sprite):
 
     def InsMove(self, params):
         # TODO: Error handling if the id does not exist
-        interactableID = f"{params.location_type} {params.location_identifier}"
-        if interactableID in self.level.interactables:
-            moveToObj = self.level.interactables[interactableID]
-        else:
+        moveToObj = self.level.item_factory.get_item(params.location_type, params.location_identifier)
+        if moveToObj == None:
+            print(f"Unable to find {params.location_type} with ID {params.location_identifier} to move actor {self.name} to.")
             return True
 
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
-        if moveToObj.__class__ == Desk:
+        if moveToObj.__class__.__name__ == 'Desk':
             match moveToObj.access_side:
-                case "top":
+                case 'top':
                     endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
                     endDirection_degrees = 0
-                case "bottom":
+                case 'bottom':
                     endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - self.height / 2)
                     endDirection_degrees = 180
-                case "left":
+                case 'left':
                     endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
                     endDirection_degrees = 270
-                case "right":
+                case 'right':
                     endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
                     endDirection_degrees = 90
         else:
@@ -181,10 +182,21 @@ class ChalkActor(arcade.Sprite):
             case _: # If we are not axis aligned, then we are not at a desk
                 return True
 
-        # TODO: Make the interactables also contain sprite lists to iterate through?
-        overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
+        match params.parcel_type:
+            case 'any':
+                # TODO: Make list for take/grabables    
+                for sprite_list in self.level.interactable_sprites:
+                    overlaps = arcade.get_sprites_in_rect(overlapRect, sprite_list)
+                    if len(overlaps) > 0:
+                        break # Found it 
+            
+            case 'doc':
+                overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desk_sprites)
+                if len(overlaps) == 0:
+                    overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.tutorials)
+
         if len(overlaps) == 0:
-            print(f"InsTake debug no overlaps")
+            print(f"Actor {self.name}'s InsTake found no interactables")
             return True
 
         # TODO: Should only be 1 overlap, but could be a bug later
@@ -192,8 +204,9 @@ class ChalkActor(arcade.Sprite):
         if len(overlaps) > 1:
             print(f"InsTake overlapped with {len(overlaps)} objects! Defaulting to the first right now")
 
-        if params.parcel_type == "doc" or params.parcel_type == "any":
-            if interactable.__class__ == Desk:
+        # TODO: Change to enum after match?
+        if params.parcel_type == 'doc' or params.parcel_type == 'any':
+            if interactable.__class__.__name__ == 'Desk':
                 # If the object can take the document, remove it from our inventory
                 ID = interactable.interact(params)
                 if ID >= 0:
@@ -205,7 +218,7 @@ class ChalkActor(arcade.Sprite):
                         self.inventory.add_item(ParcelParams("doc", ID))
 
                 return True
-            elif params.parcel_type != "any": # Can only take docs from desks
+            elif params.parcel_type != 'any': # Can only take docs from desks
                 return True
             # Let 'any' try the other options
 
@@ -217,8 +230,8 @@ class ChalkActor(arcade.Sprite):
             return True
 
         # TODO: Handle 'ANY' type
-        # Docs must be at a desk to drop them (Don't want to scatter paapers all over the floor!)
-        if params.parcel_type == "doc":
+        # Docs must be at a desk to drop them (Don't want to scatter papers all over the floor!)
+        if params.parcel_type == 'doc':
             # Find the interactable in 'front' of us, if there exists one (otherwise fail)
             match self.angle:
                 case 0: # Facing down
@@ -232,7 +245,8 @@ class ChalkActor(arcade.Sprite):
                 case _: # If we are not axis aligned, then we are not at a desk
                     return True
 
-            overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desks)
+            # TODO: Make list for doc containers
+            overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desk_sprites)
             if len(overlaps) == 0:
                 print(f"InsDrop debug no overlaps")
                 return True
@@ -264,7 +278,7 @@ class ChalkActor(arcade.Sprite):
                 item_id = self.inventory.get_first_itemID(params.test_condition.test_subject.subject_type)
                 print(f"Retrived item type {params.test_condition.test_subject.subject_type} with ID {item_id}")
 
-                item = ItemFactory.get_item(params.test_condition.test_subject.subject_type, item_id)
+                item = self.level.item_factory.get_item(params.test_condition.test_subject.subject_type, item_id)
                 if item == None:
                     print(f"No item {params.test_condition.test_subject.subject_type} with ID {item_id}")
                     return # Should not happen
@@ -284,22 +298,22 @@ class ChalkActor(arcade.Sprite):
             self.cur_instruction += 1 # Skip the next instruction, the condition failed
 
         match params.test_condition.test_subject.subject_type:
-            case "doc":
+            case 'doc':
                 InventoryCheck(params)
 
-            case "crate":
+            case 'crate':
                 InventoryCheck(params)
 
-            case "cart":
+            case 'cart':
                 InventoryCheck(params)
 
-            case "floor":
+            case 'floor':
                 raise NotImplementedError
                 
-            case "building":
+            case 'building':
                 raise NotImplementedError
 
-        return True;
+        return True
 
     def InsGoto(self, params):
         if params.label_name in self.labels:
@@ -308,78 +322,3 @@ class ChalkActor(arcade.Sprite):
             print(f"Unknown label: {params.label_name}, labels: {self.labels}")
 
         return True
-
-class Desk(arcade.Sprite):
-    def __init__(self):
-        super().__init__(
-            assets_dir / "chalk-desk1.png",
-            scale=1/4,
-        )
-
-    def setup(self, tobj, level):
-        # original data from loading the Tiled object
-        self._tobj = tobj
-
-        self.name = tobj.name.lower()
-        print(f"desk name {self.name}")
-
-        # determine position based on the object bounds:
-        self.bounds = arcade.LRBT(
-            min(x[0] for x in tobj.shape),
-            max(x[0] for x in tobj.shape),
-            min(x[1] for x in tobj.shape),
-            max(x[1] for x in tobj.shape),
-        )
-        print(f"desk bounds {self.bounds}")
-        self.position = self.bounds.center
-
-        self.access_side = tobj.properties["access_side"];
-        print(f"desk access-side {self.access_side}")
-
-        self.documents = []
-        self.doc_handling = lambda *_: None
-
-        fontSize = 24
-        if len(tobj.name) == len("desk ."):
-            self.name_sprite = arcade.create_text_sprite(f"{tobj.name.title()}", arcade.color.WHITE, fontSize) # Desk A, Desk B, Desk C, etc.
-        else:
-            self.name_sprite = arcade.create_text_sprite(f"{tobj.name.split(' ')[1].title()}", arcade.color.WHITE, fontSize) # Remove the 'desk' from the name as it's longer than just a letter
-
-        padding = (2, 12)
-        self.name_sprite.position = (self.position[0] + padding[0], self.position[1] + padding[1])
-        level.add_sprite("Actors", self.name_sprite)
-
-    def tick(self):
-        # TODO: Don't tick when we don't need to?
-
-        stopTicking = True
-        tempList = self.documents # In case the doc IDs are removed in the handler
-        for doc in tempList:
-            if self.doc_handling(self, doc) == False:
-                stopTicking = False
-
-        pass
-
-    def interact(self, params):
-        match params.__class__.__name__:
-            case "InsTake":
-                if params.parcel_identifier == None:
-                    if len(self.documents) :
-                        print(f"Docs: {self.documents}")
-                        for i in self.documents:
-                            self.documents.remove(i)
-                            return i
-                elif params.parcel_identifier in self.documents:
-                    print(f"{self.name} removing {params.parcel_type} {params.parcel_identifier}")
-                    self.documents.remove(params.parcel_identifier)
-                    return params.parcel_identifier
-
-            case "InsDrop":
-                # TODO: Start ticking (when it's not on by default)
-                print(f"{self.name} adding {params.parcel_type} {params.parcel_identifier}")
-                self.documents.append(params.parcel_identifier)
-                return params.parcel_identifier
-            case _:
-                raise NotImplementedError(params.__class__.__name__)
-
-        return -1

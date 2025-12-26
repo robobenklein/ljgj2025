@@ -1,20 +1,7 @@
 
-import arcade
-
-from ..assets import assets_dir, levels_dir
-from ..actor import ChalkActor, Desk
 from ..level import ChalkLevel
-from ..itemfactory import ItemFactory
 
 from .level1 import Level1
-
-class PlayerActor(ChalkActor):
-    def __init__(self):
-        super().__init__(
-            assets_dir / "char1.png",
-            # assets_dir / "chalk-desk1.png",
-            scale=1/4,
-        )
 
 class MenuLevel(ChalkLevel):
     """
@@ -30,16 +17,11 @@ class MenuLevel(ChalkLevel):
         super().setup(owner)
         self.player = self.actors["player"]
 
-        # Tell this desk that when it recieves a document it should load level 1
-        self.interactables["desk b"].doc_handling = self.load_level_1
+        # Tell this desk that when it receives a document it should load level 1
+        self.item_factory.get_item('desk', 'B').doc_handling = self.load_level_1
 
     def load(self):
         super().load()
-        
-        for desk in self.interactables.values():
-            desk.documents.clear()
-
-        self.interactables["desk a"].documents = (ItemFactory.factory("doc", range(1)))
 
     def execution_step(self):
         super().execution_step()

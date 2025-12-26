@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="left-up" width="30" height="20" tilewidth="64" tileheight="64" infinite="0" nextlayerid="4" nextobjectid="8">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="left-up" width="30" height="20" tilewidth="64" tileheight="64" infinite="0" nextlayerid="7" nextobjectid="13">
  <editorsettings>
   <export target="menu1.json" format="json"/>
  </editorsettings>
- <tileset firstgid="1" source="../tiles/chalk-brick1-64.tsx"/>
+ <tileset firstgid="1" source="../assets/tiles/chalk-brick1-64.tsx"/>
  <layer id="1" name="building" width="30" height="20">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -28,6 +28,14 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
+ <objectgroup id="4" name="tutorials">
+  <object id="10" name="tutorial {}" type="tutorial" x="256" y="896" width="64" height="64">
+   <properties>
+    <property name="message">To select levels, move the document in desk A to one of the other desks.
+NOTE: It takes a minimum of 1 tick for a desk to process a document!</property>
+   </properties>
+  </object>
+ </objectgroup>
  <objectgroup id="2" name="desks">
   <object id="2" name="desk C" type="desk" x="704" y="512" width="128" height="128">
    <properties>
@@ -47,6 +55,13 @@
   <object id="4" name="desk D" type="desk" x="896" y="512" width="128" height="128">
    <properties>
     <property name="access_side" value="top"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="6" name="doc_spawners">
+  <object id="11" name="doc_spawner {}" type="doc_spawner" x="1632" y="864" width="64" height="64">
+   <properties>
+    <property name="count" type="int" value="1"/>
    </properties>
   </object>
  </objectgroup>

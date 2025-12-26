@@ -1,5 +1,4 @@
 
-from pathlib import Path
 import random
 import arcade
 import arcade.gui
@@ -363,11 +362,14 @@ class GameplayView(arcade.View):
     def add_level(self, level):
         self.level = level.factory()
         self.level.setup(self)
+        print(f"Moving to level: {self.level}")      
         self.level_stack.push_state(self.level)
         self.reset_level()
         
     def remove_current_level(self):
         self.level.execution_end()
         self.level.running = False
+        print(f"Moving from level: {self.level}")
         self.level = self.level_stack.pop_state()
+        print(f"To level: {self.level}")
         self.reset_level()

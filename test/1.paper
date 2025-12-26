@@ -4,7 +4,7 @@
 # level1
 move desk inbox
 take doc
-WHEN doc.spam
+WHEN doc.spam 1
 goto spam
 WHEN doc.dest A
 move desk A
@@ -18,3 +18,4 @@ goto level1
 # spam
 move desk spambox
 drop doc
+

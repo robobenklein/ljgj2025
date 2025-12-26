@@ -3,7 +3,7 @@
  <editorsettings>
   <export target="../paperwork-instructions/paperwork_lang/levels/chalk-brick1-64.json" format="json"/>
  </editorsettings>
- <image source="../assets/chalk-tileset1.png" width="512" height="512"/>
+ <image source="../chalk-tileset1.png" width="512" height="512"/>
  <tile id="0">
   <objectgroup draworder="index" id="2">
    <object id="1" x="29.0909" y="0" width="34.9091" height="64"/>

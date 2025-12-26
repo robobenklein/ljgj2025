@@ -2,8 +2,8 @@ import arcade
 import math
 
 from .assets import levels_dir
-from .actor import Desk, ChalkActor
-
+from .actor import ChalkActor
+from .itemfactory import ItemFactory
 
 class ChalkLevel(arcade.Scene):
     """
@@ -39,34 +39,40 @@ class ChalkLevel(arcade.Scene):
         self.tile_map = None
         self.tile_bounds = None
         self.time_step = .5 # every 60 frames seems too slow TODO: (possibly make it an option in a button)
+        self.item_factory = ItemFactory()
 
     # Load any extra data that should persist until the level is destroyed
     def setup(self, owner):
         self.desk_sprites = self.add_sprite_list(
-            "Desks",
+            'Desks',
             use_spatial_hash=True,
-        ) # Make now so desks can add more sprites to it, like text on top of them
-        self.actor_sprites = self.add_sprite_list(
-            "Actors",
-            use_spatial_hash=False,
-        ) # Make now so actors can add more sprites to it, like text that follow them
-        self.interactables = {}
+        )
+        self.text_sprites = self.add_sprite_list(
+            'Text',
+            use_spatial_hash=True,
+        )
+
+        self.interactable_sprites = []
+        self.interactable_sprites.append(self.desk_sprites)
+
+        self.actor_sprites = self.add_sprite_list('Actors')
+        self.movable_text_sprites = self.add_sprite_list("movable_text")
         self.actors = {}
         self.owner = owner
 
-        for desk_tobj in self.tile_map.object_lists['desks']:
-            print(f"load desk {desk_tobj}")
-            desk = Desk()
-            self.desk_sprites.append(desk)
-            desk.setup(desk_tobj, self)
-            self.interactables[desk.name.lower()] = desk     
-
         for actor_tobj in self.tile_map.object_lists['actors']:
-            print(f"load actor {actor_tobj}")
+            print(f"Setup actor {actor_tobj}")
             actor = ChalkActor()
             self.actor_sprites.append(actor)
             actor.setup(actor_tobj, self)
             self.actors[actor.name.lower()] = actor
+
+        # TODO: Can/should actors/desks be part of this?
+        for item_type in self.item_factory.constructors:
+            pluralType = f"{item_type}s"
+            if pluralType in self.tile_map.object_lists:
+                print(f"Setup {pluralType}")
+                self.item_factory.factory(self.tile_map.object_lists[pluralType], level=self)
 
     # Load any non-persistent data that we don't need to keep around when unloaded
     # Will reset any existing data if called again
@@ -75,12 +81,14 @@ class ChalkLevel(arcade.Scene):
         self.tick_count = 0
 
         for actor_tobj in self.tile_map.object_lists['actors']:
-            self.actors[actor_tobj.name.lower()].setup(actor_tobj, self)
+            self.actors[actor_tobj.name.lower()].load(actor_tobj) # Reload any dynamic data for the actor, position angle etc.
+
+        self.item_factory.load_items(self.tile_map.object_lists) # Reload any dynamic data for the items, position functionality (spawning) etc.
 
     # Unload anything we don't need to keep
     def unload(self):
         pass
-
+        
     def execution_start(self):
         self.running = True
         for actor in self.actors.values():
@@ -97,8 +105,8 @@ class ChalkLevel(arcade.Scene):
             self.cur_time += delta_time
 
     def execution_step(self):
-        for interactable in self.interactables.values():
-            interactable.tick()
+        for desk in self.item_factory.get_items('desk').values():
+            desk.tick()
 
         # Tick actors after so the interactables are not interacted with and update on the same tick
         for actor in self.actors.values():

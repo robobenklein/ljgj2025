@@ -3,7 +3,7 @@
  <editorsettings>
   <export target="level1.json" format="json"/>
  </editorsettings>
- <tileset firstgid="1" source="../tiles/chalk-brick1-64.tsx"/>
+ <tileset firstgid="1" source="../assets/tiles/chalk-brick1-64.tsx"/>
  <layer id="1" name="building" width="40" height="30">
   <data encoding="csv">
 19,19,2,11,2,11,11,19,3,11,10,10,3,2,18,19,2,2,10,11,11,3,3,19,18,19,11,2,19,2,3,18,3,10,11,11,3,3,18,18,
@@ -47,29 +47,34 @@
   <object id="3" name="desk A" type="desk" x="128" y="128" width="128" height="128">
    <properties>
     <property name="access_side" value="bottom"/>
+    <property name="correct_doc_count" type="int" value="0"/>
    </properties>
   </object>
   <object id="4" name="desk B" type="desk" x="512" y="128" width="128" height="128">
    <properties>
     <property name="access_side" value="bottom"/>
+    <property name="correct_doc_count" type="int" value="0"/>
    </properties>
   </object>
   <object id="5" name="desk C" type="desk" x="896" y="128" width="128" height="128">
    <properties>
     <property name="access_side" value="bottom"/>
+    <property name="correct_doc_count" type="int" value="0"/>
    </properties>
   </object>
   <object id="6" name="desk spambox" type="desk" x="128" y="1216" width="128" height="128">
    <properties>
     <property name="access_side" value="right"/>
+    <property name="correct_doc_count" type="int" value="0"/>
    </properties>
   </object>
  </objectgroup>
- <objectgroup id="3" name="docs">
-  <object id="8" name="doc {}" type="doc" x="160" y="1632" width="64" height="64">
+ <objectgroup id="3" name="doc_spawners">
+  <object id="8" name="doc_spawner {}" type="doc_spawner" x="160" y="1632" width="64" height="64">
    <properties>
-    <property name="destination" value="desk {desk}"/>
-    <property name="spam" value="{}"/>
+    <property name="count" type="int" value="21"/>
+    <property name="dest" value="desk {desk}"/>
+    <property name="spam" type="bool" value="false"/>
    </properties>
   </object>
  </objectgroup>

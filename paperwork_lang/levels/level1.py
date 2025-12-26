@@ -1,13 +1,8 @@
 
-import arcade
 import random
 import math
-import sys
 
-from ..assets import assets_dir, levels_dir
-from ..actor import ChalkActor, Desk
 from ..level import ChalkLevel
-from ..itemfactory import ItemFactory
 
 class Level1(ChalkLevel):
     """
@@ -34,11 +29,6 @@ class Level1(ChalkLevel):
     def load(self):
         super().load()
 
-        for desk in self.interactables.values():
-            desk.documents.clear()
-
-        ItemFactory.clear_items("doc")
-
         match self.iter_count:
             # Always starts with: a, a, spam, b, b, spam, c, c, spam, a, a, spam, b, b, spam, c, c, spam, a, b, c
             case 0:
@@ -58,7 +48,7 @@ class Level1(ChalkLevel):
                 self.c_doc_count = random.randrange(min, max)
                 self.spam_doc_count = random.randrange(min, max)
 
-                self.time_step = .25 # Tick every ~15 frames
+                self.time_step = .166 # Tick every ~10 frames
 
             # Finally much larger amount, but seeded random to allow others to compare times
             case 2:
@@ -74,20 +64,25 @@ class Level1(ChalkLevel):
         self.populate_desks()
 
     def populate_desks(self):
-        documentIDs = ItemFactory.factory("doc", range(self.a_doc_count + self.b_doc_count + self.c_doc_count + self.spam_doc_count))
+        if self.iter_count > 0:
+            docClone = self.item_factory.get_item('doc', 0)
+            docCloneObj = self.item_factory.Obj(docClone.__dict__)
+            documentIDs = self.item_factory.factory_clone('doc', range(self.a_doc_count + self.b_doc_count + self.c_doc_count + self.spam_doc_count), docCloneObj)
+        else:
+            documentIDs = self.item_factory.factory_clone('doc', range(self.a_doc_count + self.b_doc_count + self.c_doc_count + self.spam_doc_count)) 
 
         for i in range(self.a_doc_count):
-            ItemFactory.get_item("doc", i).dest = "a"
+            self.item_factory.get_item('doc', i).dest = 'a'
 
         for i in range(self.a_doc_count, self.a_doc_count + self.b_doc_count):
-            ItemFactory.get_item("doc", i).dest = "b"
+            self.item_factory.get_item('doc', i).dest = 'b'
 
         for i in range(self.a_doc_count + self.b_doc_count, self.a_doc_count + self.b_doc_count + self.c_doc_count):
-            ItemFactory.get_item("doc", i).dest = "c"
+            self.item_factory.get_item('doc', i).dest = 'c'
 
-        destinations = ["a", "b", "c"]
+        destinations = ['a', 'b', 'c']
         for i in range(self.a_doc_count + self.b_doc_count + self.c_doc_count,  self.a_doc_count + self.b_doc_count + self.c_doc_count + self.spam_doc_count):
-            doc = ItemFactory.get_item("doc", i)
+            doc = self.item_factory.get_item('doc', i)
             doc.dest = destinations[random.randrange(0, len(destinations))] # The des can still be rand in the last test, should be no diff to the time it takes
             doc.spam = True
 
@@ -96,7 +91,7 @@ class Level1(ChalkLevel):
             if self.completed_once == False:
                 random.shuffle(documentIDs)
             else:
-                random.Random("paperwork").shuffle(documentIDs)
+                random.Random('paperwork').shuffle(documentIDs)
 
         else:
             # a, a, spam, b, b, spam, c, c, spam,
@@ -108,36 +103,30 @@ class Level1(ChalkLevel):
                 4, self.a_doc_count + 4, self.a_doc_count + self.b_doc_count + 4
             ]
 
-        print(f"ids now {documentIDs}")
-
         # Tell this desk that when it receives a document it should load level 1
-        for interactable_name in self.interactables.keys():
-            print(f"Setting up {interactable_name}")
-            desk = self.interactables[interactable_name]
-            match interactable_name:
-                case "desk a":
+        for desk_name in self.item_factory.get_items('desk').keys():
+            print(f"Extra setup up for desk {desk_name}")
+            desk = self.item_factory.get_item('desk', desk_name)
+            match desk_name:
+                case 'a':
                     desk.doc_handling = self.document_abc_handler
-                    desk.correct_doc_count = 0
 
-                case "desk b":
+                case 'b':
                     desk.doc_handling = self.document_abc_handler
-                    desk.correct_doc_count = 0
                     
-                case "desk c":
+                case 'c':
                     desk.doc_handling = self.document_abc_handler
-                    desk.correct_doc_count = 0
                     
-                case "desk spambox":
+                case 'spambox':
                     desk.doc_handling = self.document_spam_handler
-                    desk.correct_doc_count = 0
 
-                case "desk inbox":
-                    desk.documents = documentIDs
+                case 'inbox':
+                    desk.documents = documentIDs # Always reset this as we need a specific order
 
     def document_abc_handler(level, desk, doc_id):
             desk.documents.remove(doc_id)
 
-            doc = ItemFactory.get_item("doc", doc_id)
+            doc = level.item_factory.get_item('doc', doc_id)
             if "desk " + doc.dest == desk.name:
                 desk.correct_doc_count += 1
                 print(f"{desk.name} got correct document {doc_id}, {desk.correct_doc_count} / {getattr(level, doc.dest + "_doc_count")}")
@@ -155,8 +144,8 @@ class Level1(ChalkLevel):
     def document_spam_handler(level, self, doc_id):
         self.documents.remove(doc_id)
 
-        doc = ItemFactory.get_item("doc", doc_id)
-        if hasattr(doc, "spam"):
+        doc = level.item_factory.get_item('doc', doc_id)
+        if hasattr(doc, 'spam'):
             self.correct_doc_count += 1
             if self.correct_doc_count == level.spam_doc_count:
                 level.completion_count += 1
