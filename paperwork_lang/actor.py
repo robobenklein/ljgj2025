@@ -1,6 +1,7 @@
 
 import arcade
 import lark
+import math
 
 from collections import namedtuple
 ParcelParams = namedtuple("ParcelParams", ["parcel_type", "parcel_identifier"])
@@ -35,9 +36,10 @@ class ChalkActor(arcade.Sprite):
 
         self.angle = 0 # Set before the name_sprite to not trigger two pos sets
 
-        if hasattr(self, "name_sprite") == False:
+        if hasattr(self, 'name_sprite') == False:
             fontSize = 24
             self.name_sprite = arcade.create_text_sprite(f"{tobj.name}", arcade.color.WHITE, fontSize)
+            self.name_sprite.hit_box = arcade.hitbox.HitBox([(0,0), (0,0)])
             level.movable_text_sprites.append(self.name_sprite)
         
         # determine position based on the object bounds: (set after the name_sprite so it updates position at the same time)
@@ -45,9 +47,18 @@ class ChalkActor(arcade.Sprite):
         print(f"actor {self.name} at {tobj.shape}")
         self.position = tobj.shape
 
+        assert level.tile_map.tile_width == level.tile_map.tile_height, f"Tile map is not a grid! {level.tile_map.tile_width}/{level.tile_map.tile_height}"
+        self.speed = level.tile_map.tile_width / 2 # Move 1/2 tile per tick, provides some angle movement too
+        self.barrier_list = arcade.AStarBarrierList(self, level.blocking_sprites, level.tile_map.tile_width,
+                                                    level.tile_bounds.left, level.tile_bounds.left + level.tile_bounds.width,
+                                                    level.tile_bounds.bottom, level.tile_bounds.bottom + level.tile_bounds.height)
+        self.path_points = []
+
     def load(self, tobj):
+        self.center_x = tobj.shape[0]
+        self.center_y = tobj.shape[1] # Use center so we don't update text twice
         self.angle = 0
-        self.position = tobj.shape   
+        self.path_points.clear()
 
     @arcade.Sprite.position.setter
     def position(self, new_value: arcade.Point2):
@@ -56,6 +67,9 @@ class ChalkActor(arcade.Sprite):
 
     @arcade.Sprite.angle.setter
     def angle(self, new_value: float):
+        if new_value >= 360:
+            new_value -= 360
+
         arcade.Sprite.angle.__set__(self, new_value)
         self.set_name_position() # Need to update if the angle changed
             
@@ -63,6 +77,9 @@ class ChalkActor(arcade.Sprite):
         """
         Loads the program into the actor and enables execution
         """
+        if not block:
+            return
+        
         try:
             self.ptree = parse(block)
         except lark.exceptions.UnexpectedInput as e:
@@ -97,6 +114,11 @@ class ChalkActor(arcade.Sprite):
             # for now let's just spin lol
             self.turn_right(10)
             return
+        
+        if len(self.path_points) > 0:
+            self.move_along_path()
+            return
+
         # runs the current instruction
         if self.cur_instruction >= len(self.instructions):
             self.cur_instruction = 0
@@ -123,22 +145,63 @@ class ChalkActor(arcade.Sprite):
 
     def set_name_position(self):
         if hasattr(self, "name_sprite"):
-            padding = 16            
-            match self.angle:
-                case 0: # up
-                    self.name_sprite.position = (self.position[0], self.position[1] + self.height / 2 + padding)
+            padding = 16
+            if self.angle <= 60 or self.angle > 300: # up
+                self.name_sprite.position = (self.position[0], self.position[1] + self.height / 2 + padding)
+            elif self.angle <= 120 or self.angle > 240: # left/right
+                self.name_sprite.position = (self.position[0], self.position[1] + self.width / 4 + padding)
+            else: # down
+                self.name_sprite.position = (self.position[0], self.position[1] - self.height / 2 - padding)
 
-                case 90: # left
-                    self.name_sprite.position = (self.position[0], self.position[1] + self.width / 4 + padding)
+    def move_along_path(self):
+        # Where are we going
+        curPoint = self.path_points[self.cur_point]
+        destX = curPoint[0]
+        destY = curPoint[1]
 
-                case 180: # down
-                    self.name_sprite.position = (self.position[0], self.position[1] - self.height / 2 - padding)
+        # X and Y diff between the two
+        xDiff = destX - self.center_x
+        yDiff = destY - self.center_y
 
-                case 270: # right, same as left
-                    self.name_sprite.position = (self.position[0], self.position[1] + self.width / 4 + padding)            
+        # Calculate angle to get there
+        angle = math.atan2(yDiff, xDiff)
+
+        # How far are we?
+        distance = math.sqrt((self.center_x - destX) ** 2 + (self.center_y - destY) ** 2)
+
+        # How fast should we go? If we are close to our destination,
+        # lower our speed so we don't overshoot.
+        speed = min(self.speed, distance)
+
+        # Calculate vector to travel
+        cos = math.cos(angle)
+        sin = math.sin(angle)
+        changeX = cos * speed
+        changeY = sin * speed
+
+        # Update our location
+        self.center_x += changeX
+        self.center_y += changeY
+
+        # How far are we?
+        distance = math.sqrt((self.center_x - destX) ** 2 + (self.center_y - destY) ** 2)
+
+        # If we are there, head to the next point.
+        if distance == 0:
+            # Reached the end of the list, start over.
+            if self.cur_point == len(self.path_points) - 1:
+                print("Arrived at destination")
+                self.center_x = destX
+                self.center_y = destY
+                self.angle = self.end_angle
+                self.path_points.clear()
+                return
+        
+            self.cur_point += 1
+
+        self.angle = -round(math.degrees(angle)) # Convert from math's counter clockwise rotations to sprites clockwise rotations
 
     def InsMove(self, params):
-        # TODO: Error handling if the id does not exist
         moveToObj = self.level.item_factory.get_item(params.location_type, params.location_identifier)
         if moveToObj == None:
             print(f"Unable to find {params.location_type} with ID {params.location_identifier} to move actor {self.name} to.")
@@ -166,9 +229,12 @@ class ChalkActor(arcade.Sprite):
                 endPoint = moveToObj.position
                 endDirection_degrees = self.angle
 
-        # TODO: Pathfind instead of teleportation
-        self.position = endPoint
-        self.angle = endDirection_degrees
+        if endPoint != self.position:
+            # TODO: This path needs a LOT of smoothing applied and it does not seem to take the sprite's hitbox into account for wall corners...
+            #   Time to break out the A* code to fix these common problems
+            self.path_points = arcade.astar_calculate_path(self.position, endPoint, self.barrier_list)
+            self.cur_point = 1 # Skip the first, it's where we are now
+            self.end_angle = endDirection_degrees
 
         return True # Finished, if not true, then we get re-called
 

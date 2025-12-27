@@ -55,24 +55,29 @@ class ChalkLevel(arcade.Scene):
         self.interactable_sprites = []
         self.interactable_sprites.append(self.desk_sprites)
 
-        self.actor_sprites = self.add_sprite_list('Actors')
-        self.movable_text_sprites = self.add_sprite_list("movable_text")
-        self.actors = {}
+        self.movable_text_sprites = self.add_sprite_list('movable_text')
         self.owner = owner
 
+        for item_type in self.item_factory.constructors:
+            pluralType = f"{item_type}s"
+            if pluralType in self.tile_map.object_lists:
+                print(f"Setup {pluralType}")
+                self.item_factory.factory(self.tile_map.object_lists[pluralType], level=self)
+
+        building_sprites = self.tile_map.sprite_lists['building']
+        self.blocking_sprites = arcade.SpriteList(True, 128, None, len(building_sprites) + len(self.desk_sprites), True, False) # TODO: Add more types?
+        self.blocking_sprites.extend(iter(building_sprites))
+        self.blocking_sprites.extend(iter(self.desk_sprites))
+
+        # Setup actors last as they need all the other sprites for pathing
+        self.actor_sprites = self.add_sprite_list('Actors')
+        self.actors = {}
         for actor_tobj in self.tile_map.object_lists['actors']:
             print(f"Setup actor {actor_tobj}")
             actor = ChalkActor()
             self.actor_sprites.append(actor)
             actor.setup(actor_tobj, self)
             self.actors[actor.name.lower()] = actor
-
-        # TODO: Can/should actors/desks be part of this?
-        for item_type in self.item_factory.constructors:
-            pluralType = f"{item_type}s"
-            if pluralType in self.tile_map.object_lists:
-                print(f"Setup {pluralType}")
-                self.item_factory.factory(self.tile_map.object_lists[pluralType], level=self)
 
     # Load any non-persistent data that we don't need to keep around when unloaded
     # Will reset any existing data if called again

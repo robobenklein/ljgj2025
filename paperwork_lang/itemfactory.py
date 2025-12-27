@@ -26,12 +26,12 @@ class Cart(Item, arcade.Sprite):
         print("Creating Cart")
         super().__init__(ID, item_tobj)
 
-class Tutorial(Item, arcade.Sprite):
+class Tutorial(Item, arcade.BasicSprite):
     def __init__(self, ID, item_tobj, **kargs):
         print("Creating Tutorial")
         super().__init__(ID, item_tobj)
-        arcade.Sprite.__init__(self,
-            assets_dir / "chalk-cpu-acronym.png",
+        arcade.BasicSprite.__init__(self,
+            arcade.texture.default_texture_cache.load_or_get_texture(assets_dir / "chalk-cpu-acronym.png"),
             scale=1/4,
         )
 
@@ -53,6 +53,7 @@ class Tutorial(Item, arcade.Sprite):
 
         fontSize = 24
         self.name_sprite = arcade.create_text_sprite(self.name, arcade.color.WHITE, fontSize)
+        self.name_sprite.hit_box = arcade.hitbox.HitBox([(0,0), (0,0)])
 
         padding = 12
         self.name_sprite.position = (self.position[0], self.position[1] + self.height / 2 + padding)
@@ -89,7 +90,7 @@ class DocumentSpawner(Item):
         for i in range(self.count):
             tobj = DocObj()
             tobj.type = 'doc'
-            tobj.properties = item_tobj.properties
+            tobj.properties = item_tobj.properties.copy()
             tobj.properties.pop('count') # Docs don't need that
             doc_tobjs.append(tobj)
 
@@ -100,10 +101,10 @@ class DocumentSpawner(Item):
         overlap[0].documents.extend(newDocs)
 
 # TODO: move this and the tutorial to separate files? (Would need to move the base item too to avoid circular include for the tutorial)
-class Desk(arcade.Sprite):
+class Desk(arcade.BasicSprite):
     def __init__(self, tobj, **kargs):
         super().__init__(
-            assets_dir / "chalk-desk1.png",
+            arcade.texture.default_texture_cache.load_or_get_texture(assets_dir / "chalk-desk1.png"),
             scale=1/4,
         )
         level = kargs['level']
@@ -136,6 +137,8 @@ class Desk(arcade.Sprite):
             self.name_sprite = arcade.create_text_sprite(f"{tobj.name.title()}", arcade.color.WHITE, fontSize) # Desk A, Desk B, Desk C, etc.
         else:
             self.name_sprite = arcade.create_text_sprite(f"{tobj.name.split(' ')[1].title()}", arcade.color.WHITE, fontSize) # Remove the 'desk' from the name as it's longer than just a letter
+
+        self.name_sprite.hit_box = arcade.hitbox.HitBox([(0,0), (0,0)])
 
         padding = (2, 12)
         self.name_sprite.position = (self.position[0] + padding[0], self.position[1] + padding[1])
