@@ -145,22 +145,26 @@ class ChalkActor(arcade.Sprite):
             return True
 
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
-        if moveToObj.__class__.__name__ == 'Desk':
-            match moveToObj.access_side:
-                case 'top':
-                    endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
-                    endDirection_degrees = 0
-                case 'bottom':
-                    endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - self.height / 2)
-                    endDirection_degrees = 180
-                case 'left':
-                    endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
-                    endDirection_degrees = 270
-                case 'right':
-                    endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
-                    endDirection_degrees = 90
-        else:
-            raise NotImplementedError
+        match moveToObj.__class__.__name__:
+            case 'Desk':
+                match moveToObj.access_side:
+                    case 'top':
+                        endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
+                        endDirection_degrees = 0
+                    case 'bottom':
+                        endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - self.height / 2)
+                        endDirection_degrees = 180
+                    case 'left':
+                        endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
+                        endDirection_degrees = 270
+                    case 'right':
+                        endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
+                        endDirection_degrees = 90
+            # Cart should also have an access side?
+            # Box could be any side (but not on it like tutorials)
+            case _:
+                endPoint = moveToObj.position
+                endDirection_degrees = self.angle
 
         # TODO: Pathfind instead of teleportation
         self.position = endPoint
@@ -179,7 +183,7 @@ class ChalkActor(arcade.Sprite):
                 overlapRect = arcade.XYWH(self.center_x, self.center_y + self.width / 2, self.width, self.height * 2)
             case 270: # Facing right
                 overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
-            case _: # If we are not axis aligned, then we are not at a desk
+            case _: # If we are not axis aligned, then we are not at something we can take
                 return True
 
         match params.parcel_type:
@@ -192,8 +196,10 @@ class ChalkActor(arcade.Sprite):
             
             case 'doc':
                 overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desk_sprites)
-                if len(overlaps) == 0:
-                    overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.tutorials)
+                # TODO: Add carts too? Take from a cart of documents? Take an amount of documents?
+
+            case 'tutorial':
+                overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.tutorial_sprites)
 
         if len(overlaps) == 0:
             print(f"Actor {self.name}'s InsTake found no interactables")
@@ -204,7 +210,7 @@ class ChalkActor(arcade.Sprite):
         if len(overlaps) > 1:
             print(f"InsTake overlapped with {len(overlaps)} objects! Defaulting to the first right now")
 
-        # TODO: Change to enum after match?
+        # TODO: Change to enum or match statement with functions?
         if params.parcel_type == 'doc' or params.parcel_type == 'any':
             if interactable.__class__.__name__ == 'Desk':
                 # If the object can take the document, remove it from our inventory
@@ -219,6 +225,12 @@ class ChalkActor(arcade.Sprite):
 
                 return True
             elif params.parcel_type != 'any': # Can only take docs from desks
+                return True
+            # Let 'any' try the other options
+
+        if params.parcel_type == 'tutorial' or params.parcel_type == 'any':
+            if interactable.__class__.__name__ == 'Tutorial':
+                interactable.interact()
                 return True
             # Let 'any' try the other options
 

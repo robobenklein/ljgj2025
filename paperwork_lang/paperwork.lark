@@ -8,7 +8,7 @@ NAME: /[\w]+/
 _LINE_END: WS_INLINE? NEWLINE
 _WS: WS_INLINE
 
-_seperated{x, sep}: x (sep x)*  // Define a sequence of 'x sep x sep x ...'
+_separated{x, sep}: x (sep x)*  // Define a sequence of 'x sep x sep x ...'
 
 start: code_block
 
@@ -29,7 +29,7 @@ ins_move: "MOVE"i _WS location_type _WS location_identifier
 // could be anything, or could be specific
 ins_take: "TAKE"i (_WS parcel_type (_WS parcel_identifier)?)?
 
-// the actor puts down a moveable in their posession
+// the actor puts down a moveable in their possession
 ins_drop: "DROP"i (_WS parcel_type (_WS parcel_identifier)?)?
 
 // first element of control flow
@@ -50,9 +50,9 @@ test_condition: test_subject (_WS _test_value)?
 // this is because the subject will be implied based on the actor's state:
 // e.g. the floor they are on, or the doc they are holding
 
-location_type: /desk|floor|building|elevator|exit/i
+location_type: /desk|tutorial|floor|building|elevator|exit/i
 location_identifier: NAME
-parcel_type: /any|doc|box|cart/i
+parcel_type: /any|doc|box|cart|tutorial/i
 // parcels (documents) are generally not unique or special,
 // so they are numerically identified only
 // every parcel in the level has a unique number

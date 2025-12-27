@@ -290,6 +290,7 @@ class GameplayView(arcade.View):
         """
         Called when the user presses a mouse button.
         """
+        # TODO: This may be conflicting with closing the popup?
         if button == arcade.MOUSE_BUTTON_LEFT:
             worldLocation = self.camera_world.unproject((x, y))
             if (worldLocation.x, worldLocation.y) in self.level.tile_bounds:

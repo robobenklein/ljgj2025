@@ -35,26 +35,35 @@ class Tutorial(Item, arcade.Sprite):
             scale=1/4,
         )
 
-        level = kargs['level']
-        if hasattr(level, 'tutorial_sprites') == False: # Not all levels will have tutorial, so dont make part of the base level
-            level.tutorial_sprites = level.add_sprite_list('Tutorials')
-            level.interactable_sprites.append(level.tutorial_sprites)
+        self.position = arcade.LRBT(
+                min(x[0] for x in item_tobj.shape),
+                max(x[0] for x in item_tobj.shape),
+                min(x[1] for x in item_tobj.shape),
+                max(x[1] for x in item_tobj.shape),
+            ).center
 
-        level.tutorial_sprites.append(self)
+        self.level = kargs['level']
+        if hasattr(self.level, 'tutorial_sprites') == False: # Not all levels will have tutorial, so dont make part of the base level
+            self.level.tutorial_sprites = self.level.add_sprite_list('Tutorials')
+            self.level.interactable_sprites.append(self.level.tutorial_sprites)
+
+        self.level.tutorial_sprites.append(self)
+
+        self.name = item_tobj.name.title().replace('{}', f"{ID}")
 
         fontSize = 24
-        self.name_sprite = arcade.create_text_sprite(f"{item_tobj.name.title()}", arcade.color.WHITE, fontSize)
+        self.name_sprite = arcade.create_text_sprite(self.name, arcade.color.WHITE, fontSize)
 
-        padding = (2, 12)
-        self.name_sprite.position = (self.position[0] + padding[0], self.position[1] + padding[1])
-        level.text_sprites.append(self.name_sprite)
+        padding = 12
+        self.name_sprite.position = (self.position[0], self.position[1] + self.height / 2 + padding)
+        self.level.text_sprites.append(self.name_sprite)
     
     def load(self, item_tobj):
         pass # TODO: If we decide to hide them after view, we could re-visible them
 
     def interact(self):
-        pass # TODO: Show tutorial message
-
+        messageBox = arcade.gui.UIMessageBox(width=400, height=400, message_text=self.message, title=self.name, buttons=("Close",))
+        self.level.owner.camera_world_space.add(messageBox)
 
 class DocumentSpawner(Item):
     def __init__(self, ID, item_tobj, **kargs):
@@ -252,8 +261,10 @@ class ItemFactory():
     def get_item(self, item_type, ID):
         item_container = self.items[item_type]
         if type(item_container) is list:
-            if len(item_container) > ID:
-                return item_container[ID]
+            intID = int(ID)
+            print(f"{item_container}")
+            if len(item_container) > intID:
+                return item_container[intID]
         else:
             lowerID = ID.lower()
             if lowerID in item_container:
