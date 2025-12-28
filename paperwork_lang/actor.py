@@ -22,6 +22,7 @@ class ChalkActor(arcade.Sprite):
             scale=1/4,
         )
         self.saved_code_block = "" # Don't reset the user's code, so don't place in setup
+        self.teleporting = False # TODO: Debug only? Or make part of game but set tick_count to really high?
 
     def setup(self, tobj, level):
         self.level = level
@@ -48,10 +49,10 @@ class ChalkActor(arcade.Sprite):
         self.position = tobj.shape
 
         assert level.tile_map.tile_width == level.tile_map.tile_height, f"Tile map is not a grid! {level.tile_map.tile_width}/{level.tile_map.tile_height}"
-        self.speed = level.tile_map.tile_width / 2 # Move 1/2 tile per tick, provides some angle movement too
-        self.barrier_list = arcade.AStarBarrierList(self, level.blocking_sprites, level.tile_map.tile_width,
-                                                    level.tile_bounds.left, level.tile_bounds.left + level.tile_bounds.width,
-                                                    level.tile_bounds.bottom, level.tile_bounds.bottom + level.tile_bounds.height)
+        self.speed = level.tile_map.tile_width / 2 # Some tiles are half size (wall edges)
+        self.barrier_list = arcade.AStarBarrierList(self, level.blocking_sprites, self.speed,
+                                                    level.tile_bounds.left, level.tile_bounds.right,
+                                                    level.tile_bounds.bottom, level.tile_bounds.top)
         self.path_points = []
 
     def load(self, tobj):
@@ -80,6 +81,11 @@ class ChalkActor(arcade.Sprite):
         if not block:
             return
         
+        if hasattr(self, 'teleporting'):
+            if block.find('teleport') != -1:
+                self.teleporting = True
+                block = block.replace('teleport', 'move')
+
         try:
             self.ptree = parse(block)
         except lark.exceptions.UnexpectedInput as e:
@@ -146,12 +152,7 @@ class ChalkActor(arcade.Sprite):
     def set_name_position(self):
         if hasattr(self, "name_sprite"):
             padding = 16
-            if self.angle <= 60 or self.angle > 300: # up
-                self.name_sprite.position = (self.position[0], self.position[1] + self.height / 2 + padding)
-            elif self.angle <= 120 or self.angle > 240: # left/right
-                self.name_sprite.position = (self.position[0], self.position[1] + self.width / 4 + padding)
-            else: # down
-                self.name_sprite.position = (self.position[0], self.position[1] - self.height / 2 - padding)
+            self.name_sprite.position = (self.position[0], self.position[1] + (self.top - self.center_y) + padding)
 
     def move_along_path(self):
         # Where are we going
@@ -193,13 +194,13 @@ class ChalkActor(arcade.Sprite):
                 print("Arrived at destination")
                 self.center_x = destX
                 self.center_y = destY
-                self.angle = self.end_angle
+                #self.angle = self.end_angle
                 self.path_points.clear()
                 return
         
             self.cur_point += 1
 
-        self.angle = -round(math.degrees(angle)) # Convert from math's counter clockwise rotations to sprites clockwise rotations
+        #self.angle = -round(math.degrees(angle)) # Convert from math's counter clockwise rotations to sprites clockwise rotations
 
     def InsMove(self, params):
         moveToObj = self.level.item_factory.get_item(params.location_type, params.location_identifier)
@@ -210,47 +211,42 @@ class ChalkActor(arcade.Sprite):
         # Get the obj's position, then adjust it by the side we access it from and the actor's height/width
         match moveToObj.__class__.__name__:
             case 'Desk':
+                wiggle_room = 5
                 match moveToObj.access_side:
                     case 'top':
-                        endPoint = (moveToObj.position.x, moveToObj.bounds.top + self.height / 2)
-                        endDirection_degrees = 0
+                        endPoint = (moveToObj.position.x, moveToObj.bounds.top + (self.top - self.center_y) + wiggle_room)
                     case 'bottom':
-                        endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - self.height / 2)
-                        endDirection_degrees = 180
+                        endPoint = (moveToObj.position.x, moveToObj.bounds.bottom - (self.top - self.center_y) - wiggle_room)
                     case 'left':
-                        endPoint = (moveToObj.bounds.left - self.width / 2, moveToObj.position.y)
-                        endDirection_degrees = 270
+                        endPoint = (moveToObj.bounds.left - (self.right - self.center_x) - wiggle_room, moveToObj.position.y)
                     case 'right':
-                        endPoint = (moveToObj.bounds.right + self.width / 2, moveToObj.position.y)
-                        endDirection_degrees = 90
+                        endPoint = (moveToObj.bounds.right + (self.right - self.center_x) + wiggle_room, moveToObj.position.y)
             # Cart should also have an access side?
-            # Box could be any side (but not on it like tutorials)
+            # Box could be any side (but not on it like Tutorials)
             case _:
                 endPoint = moveToObj.position
-                endDirection_degrees = self.angle
 
         if endPoint != self.position:
-            # TODO: This path needs a LOT of smoothing applied and it does not seem to take the sprite's hitbox into account for wall corners...
-            #   Time to break out the A* code to fix these common problems
-            self.path_points = arcade.astar_calculate_path(self.position, endPoint, self.barrier_list)
-            self.cur_point = 1 # Skip the first, it's where we are now
-            self.end_angle = endDirection_degrees
+            if hasattr(self, 'teleporting') and self.teleporting:
+                self.position = endPoint
+                self.teleporting = False
+                return
+
+            # TODO: This path needs a LOT of smoothing applied (if we want it). Some slight wall clipping on corners, but fine
+            points = arcade.astar_calculate_path(self.position, endPoint, self.barrier_list)
+            if points != None and len(points) > 1:
+                self.path_points = points
+                self.cur_point = 1 # Skip the first, it's where we are now
+            else:
+                print(f"Unable to find path from {self.position} to {endPoint}")
 
         return True # Finished, if not true, then we get re-called
 
     def InsTake(self, params):
         # Find the interactable in 'front' of us, if there exists one (otherwise fail)
-        match self.angle:
-            case 0: # Facing down
-                overlapRect = arcade.XYWH(self.center_x, self.center_y - self.width / 2, self.width, self.height * 2)
-            case 90: # Facing left
-                overlapRect = arcade.XYWH(self.center_x - self.width / 2, self.center_y, self.width * 2, self.height)
-            case 180: # Facing up
-                overlapRect = arcade.XYWH(self.center_x, self.center_y + self.width / 2, self.width, self.height * 2)
-            case 270: # Facing right
-                overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
-            case _: # If we are not axis aligned, then we are not at something we can take
-                return True
+        width = self.right - self.left
+        height = self.top - self.bottom # the width and height of the sprite are not accurate (texture size not hitbox)
+        overlapRect = arcade.XYWH(self.center_x, self.center_y, width * 2, height * 2)
 
         match params.parcel_type:
             case 'any':
@@ -311,17 +307,9 @@ class ChalkActor(arcade.Sprite):
         # Docs must be at a desk to drop them (Don't want to scatter papers all over the floor!)
         if params.parcel_type == 'doc':
             # Find the interactable in 'front' of us, if there exists one (otherwise fail)
-            match self.angle:
-                case 0: # Facing down
-                    overlapRect = arcade.XYWH(self.center_x, self.center_y - self.width / 2, self.width, self.height * 2)
-                case 90: # Facing left
-                    overlapRect = arcade.XYWH(self.center_x - self.width / 2, self.center_y, self.width * 2, self.height)
-                case 180: # Facing up
-                    overlapRect = arcade.XYWH(self.center_x, self.center_y + self.width / 2, self.width, self.height * 2)
-                case 270: # Facing right
-                    overlapRect = arcade.XYWH(self.center_x + self.width / 2, self.center_y, self.width * 2, self.height)
-                case _: # If we are not axis aligned, then we are not at a desk
-                    return True
+            width = self.right - self.left
+            height = self.top - self.bottom # the width and height of the sprite are not accurate (texture size not hitbox)
+            overlapRect = arcade.XYWH(self.center_x, self.center_y, width * 2, height * 2)
 
             # TODO: Make list for doc containers
             overlaps = arcade.get_sprites_in_rect(overlapRect, self.level.desk_sprites)

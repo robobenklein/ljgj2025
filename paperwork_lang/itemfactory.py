@@ -41,6 +41,7 @@ class Tutorial(Item, arcade.BasicSprite):
                 min(x[1] for x in item_tobj.shape),
                 max(x[1] for x in item_tobj.shape),
             ).center
+        self._hit_box = arcade.hitbox.HitBox([(0,0), (0,0)])
 
         self.level = kargs['level']
         if hasattr(self.level, 'tutorial_sprites') == False: # Not all levels will have tutorial, so dont make part of the base level

@@ -8,6 +8,7 @@ import keyboard
 from .assets import assets_dir, starter_code
 from .levels.mainmenu import MenuLevel
 from .levels.level1 import Level1
+from .levels.testlevel import TestLevel
 
 from .statestack import StateStack
 
@@ -132,7 +133,8 @@ class GameplayView(arcade.View):
             if self.level.__class__ != Level1:
                 self.add_level(Level1)
             else:
-                self.remove_current_level()
+                while self.level.__class__ != MenuLevel:
+                    self.remove_current_level()
 
         # for the main menu play area, we'll take in lines of code like a shell prompt:
         self.code_input = arcade.gui.UIInputText(
@@ -274,6 +276,10 @@ class GameplayView(arcade.View):
             # TODO better "execute command" detection, use the Window.on_key_press() for enter?
             # TODO: Handle tab for autocomplete?
             self.code_input.text = event.old_value
+
+            if event.old_value == "load test":
+                self.add_level(TestLevel)
+                return
         else:
             # nothing to execute here
             return

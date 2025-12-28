@@ -1,0 +1,88 @@
+{ "compressionlevel":-1,
+ "height":6,
+ "infinite":false,
+ "layers":[
+        {
+         "data":[60, 26, 27, 57, 58, 59,
+            49, 0, 0, 0, 0, 0,
+            41, 0, 0, 0, 0, 0,
+            49, 0, 1, 2, 3, 19,
+            20, 0, 9, 3, 2, 3,
+            19, 58, 10, 11, 18, 19],
+         "height":6,
+         "id":1,
+         "name":"building",
+         "opacity":1,
+         "type":"tilelayer",
+         "visible":true,
+         "width":6,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":2,
+         "name":"desks",
+         "objects":[
+                {
+                 "height":128,
+                 "id":2,
+                 "name":"desk A",
+                 "properties":[
+                        {
+                         "name":"access_side",
+                         "type":"string",
+                         "value":"left"
+                        }],
+                 "rotation":0,
+                 "type":"desk",
+                 "visible":true,
+                 "width":128,
+                 "x":256,
+                 "y":64
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":3,
+         "name":"actors",
+         "objects":[
+                {
+                 "height":0,
+                 "id":1,
+                 "name":"Tester",
+                 "point":true,
+                 "rotation":0,
+                 "type":"actor",
+                 "visible":true,
+                 "width":0,
+                 "x":96,
+                 "y":224
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }],
+ "nextlayerid":4,
+ "nextobjectid":3,
+ "orientation":"orthogonal",
+ "renderorder":"right-down",
+ "tiledversion":"1.11.2",
+ "tileheight":64,
+ "tilesets":[
+        {
+         "firstgid":1,
+         "source":"..\/assets\/tiles\/chalk-brick1-64.tsx"
+        }],
+ "tilewidth":64,
+ "type":"map",
+ "version":"1.10",
+ "width":6
+}
