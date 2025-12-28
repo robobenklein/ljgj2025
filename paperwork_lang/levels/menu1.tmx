@@ -29,12 +29,7 @@
 </data>
  </layer>
  <objectgroup id="4" name="tutorials">
-  <object id="10" name="tutorial {}" type="tutorial" x="256" y="896" width="64" height="64">
-   <properties>
-    <property name="message">To select levels, move the document in desk A to one of the other desks.
-NOTE: It takes a minimum of 1 tick for a desk to process a document!</property>
-   </properties>
-  </object>
+  <object id="10" template="../assets/tutorial.tx" type="tutorial" x="256" y="896"/>
  </objectgroup>
  <objectgroup id="2" name="desks">
   <object id="2" name="desk C" type="desk" x="704" y="512" width="128" height="128">

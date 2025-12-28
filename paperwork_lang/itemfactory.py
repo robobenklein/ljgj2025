@@ -265,7 +265,6 @@ class ItemFactory():
         item_container = self.items[item_type]
         if type(item_container) is list:
             intID = int(ID)
-            print(f"{item_container}")
             if len(item_container) > intID:
                 return item_container[intID]
         else:

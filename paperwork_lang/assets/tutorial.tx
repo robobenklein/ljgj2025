@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="tutorial {}" type="tutorial" width="64" height="64">
+  <properties>
+   <property name="message">To select levels, move the document in desk A to one of the other desks.
+NOTE: It takes a minimum of 1 tick for a desk to process a document!</property>
+  </properties>
+ </object>
+</template>

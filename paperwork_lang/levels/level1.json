@@ -45,6 +45,72 @@
         }, 
         {
          "draworder":"topdown",
+         "id":5,
+         "name":"tutorials",
+         "objects":[
+                {
+                 "height":64,
+                 "id":16,
+                 "name":"tutorial {}",
+                 "properties":[
+                        {
+                         "name":"message",
+                         "type":"string",
+                         "value":"Move documents from the Inbox to one of the other desks (determined by the Dest property), or the Spambox if the document is has the Spam property set to True(1)"
+                        }],
+                 "rotation":0,
+                 "type":"tutorial",
+                 "visible":true,
+                 "width":64,
+                 "x":960,
+                 "y":1600
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":3,
+         "name":"doc_spawners",
+         "objects":[
+                {
+                 "height":64,
+                 "id":8,
+                 "name":"doc_spawner {}",
+                 "properties":[
+                        {
+                         "name":"count",
+                         "type":"int",
+                         "value":21
+                        }, 
+                        {
+                         "name":"dest",
+                         "type":"string",
+                         "value":"desk {desk}"
+                        }, 
+                        {
+                         "name":"spam",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "rotation":0,
+                 "type":"doc_spawner",
+                 "visible":true,
+                 "width":64,
+                 "x":160,
+                 "y":1632
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":2,
          "name":"desks",
          "objects":[
@@ -161,44 +227,6 @@
         }, 
         {
          "draworder":"topdown",
-         "id":3,
-         "name":"doc_spawners",
-         "objects":[
-                {
-                 "height":64,
-                 "id":8,
-                 "name":"doc_spawner {}",
-                 "properties":[
-                        {
-                         "name":"count",
-                         "type":"int",
-                         "value":21
-                        }, 
-                        {
-                         "name":"dest",
-                         "type":"string",
-                         "value":"desk {desk}"
-                        }, 
-                        {
-                         "name":"spam",
-                         "type":"bool",
-                         "value":false
-                        }],
-                 "rotation":0,
-                 "type":"doc_spawner",
-                 "visible":true,
-                 "width":64,
-                 "x":160,
-                 "y":1632
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
          "id":4,
          "name":"actors",
          "objects":[
@@ -232,8 +260,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":5,
- "nextobjectid":14,
+ "nextlayerid":7,
+ "nextobjectid":17,
  "orientation":"orthogonal",
  "renderorder":"left-up",
  "tiledversion":"1.11.2",

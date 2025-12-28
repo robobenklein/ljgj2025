@@ -272,6 +272,7 @@ class GameplayView(arcade.View):
         print(f"text input change: {event}")
         if '\n' in event.new_value:
             # TODO better "execute command" detection, use the Window.on_key_press() for enter?
+            # TODO: Handle tab for autocomplete?
             self.code_input.text = event.old_value
         else:
             # nothing to execute here
